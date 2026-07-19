@@ -1,0 +1,44 @@
+"""Fetcher registry.
+
+One fetcher per ATS backend (the core architecture principle: classify each
+firm by ATS once, maintain one fetcher per ATS -- never one scraper per firm).
+
+`get_fetcher(ats_type)` returns the fetcher instance for a given ats_type, or
+None for unknown/unsupported types (main.py skips those without crashing).
+"""
+
+from __future__ import annotations
+
+from typing import Optional
+
+from core.http import HttpClient
+
+from .base import Fetcher
+from .generic import GenericFetcher
+from .greenhouse import GreenhouseFetcher
+from .lever import LeverFetcher
+from .workday import WorkdayFetcher
+
+
+def build_registry(client: HttpClient) -> dict[str, Fetcher]:
+    return {
+        "greenhouse": GreenhouseFetcher(client),
+        "lever": LeverFetcher(client),
+        "workday": WorkdayFetcher(client),
+        "generic": GenericFetcher(client),
+    }
+
+
+def get_fetcher(registry: dict[str, Fetcher], ats_type: str) -> Optional[Fetcher]:
+    return registry.get((ats_type or "").lower())
+
+
+__all__ = [
+    "Fetcher",
+    "GreenhouseFetcher",
+    "LeverFetcher",
+    "WorkdayFetcher",
+    "GenericFetcher",
+    "build_registry",
+    "get_fetcher",
+]
