@@ -1,0 +1,59 @@
+name: biglaw-3l-monitor
+
+# Daily digest of new 3L / entry-level associate postings.
+#
+# Schedule: 12:00 UTC every day. That is 8:00 AM US-Eastern during EDT
+# (summer) and 7:00 AM US-Eastern during EST (winter). Adjust the cron below
+# if you want a fixed local hour year-round (GitHub cron is always UTC).
+on:
+  schedule:
+    - cron: "0 12 * * *"
+  workflow_dispatch: {}     # allow manual runs from the Actions tab
+
+# Needed so the job can commit state.db back to the repo.
+permissions:
+  contents: write
+
+concurrency:
+  group: biglaw-3l-monitor
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run monitor
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+        run: python main.py
+
+      - name: Persist state.db
+        # Commit the updated SQLite state back so the next run diffs against it.
+        # Guarded against empty commits so we don't spam history on quiet days.
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [[ -n "$(git status --porcelain state.db)" ]]; then
+            git add state.db
+            git commit -m "chore: update state.db [skip ci]"
+            git push
+          else
+            echo "state.db unchanged; nothing to commit."
+          fi

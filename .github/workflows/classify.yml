@@ -1,0 +1,45 @@
+name: classify-firms
+
+# One-shot / occasional helper: probe every firm's careers page, detect the ATS,
+# and commit the updated firms.yaml. Run this once after forking (the repo ships
+# with every firm as ats_type: unknown because the build sandbox had no egress).
+# Manual only -- it is not on a schedule.
+on:
+  workflow_dispatch:
+    inputs:
+      all:
+        description: "Re-probe ALL firms (not just unknown)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Classify
+        run: |
+          if [[ "${{ inputs.all }}" == "true" ]]; then
+            python classify.py --all --write -v
+          else
+            python classify.py --write -v
+          fi
+      - name: Commit updated firms.yaml
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [[ -n "$(git status --porcelain firms.yaml)" ]]; then
+            git add firms.yaml
+            git commit -m "chore: classify firms by ATS [skip ci]"
+            git push
+          else
+            echo "firms.yaml unchanged."
+          fi
