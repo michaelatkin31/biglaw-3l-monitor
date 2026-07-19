@@ -19,26 +19,31 @@ to the repo root. Nothing about the code depends on being nested.
   `.github/workflows/` at the repo root) — which is actually desirable here, so
   this personal cron doesn't execute in an unrelated repo's CI.
 
-## 2. The big one: no network in the build environment → firms ship unclassified
+## 2. No network in the build environment → classification is search-derived, not live-verified
 
 Outbound HTTPS in the build sandbox was blocked by org egress policy (HTTP 403
 on every host, including the Greenhouse/Lever APIs, Workday, and every firm's
-site). That made it **impossible to classify any firm's ATS here**, because
-classification requires fetching each careers page and inspecting where its
-apply links point.
+site). So no careers page could be fetched *directly* here.
 
-Rather than guess ATS types/tokens (explicitly disallowed by the spec, and a
-source of silent false data), **every firm in `firms.yaml` ships as
-`ats_type: unknown`**, and I built **`classify.py`** to do the classification
-from any machine with open egress (your laptop, or GitHub Actions — the
-`classify-firms` workflow). It probes each `careers_url`, follows a few likely
-"open positions" links, fingerprints the ATS by URL signature, and writes
-`ats_type` / `ats_identifier` back into `firms.yaml` (line-by-line, preserving
-comments). It never records an identifier it didn't actually see in a URL.
+Classification was instead done via **WebSearch** (which routes through separate
+infrastructure): research sub-agents read each firm's ATS host **out of the URLs
+that appear in search results** — e.g. a search hit whose link is
+`skadden.wd5.myworkdayjobs.com/Skadden_Careers` yields tenant `skadden`, site
+`Skadden_Careers`, host `skadden.wd5...`. No tokens were guessed; an identifier
+is recorded only where the actual URL was seen. This classified **66 of 73
+firms** (see `firms.yaml` header for the breakdown). All 20 Workday firms have
+their `workday_host` pinned (parsed from the observed URL), so the Workday
+fetcher never has to probe data-center subdomains.
 
-**Until `classify.py` is run, the monitor fetches nothing** (unknown firms are
-skipped). This is the one deferred step required to make the tool live, and it's
-a single command / one-click workflow.
+**Caveat: this data is search-derived, not confirmed against a live fetch.**
+Some entries are explicitly low/medium confidence (e.g. Gibson Dunn's Greenhouse
+token was seen on a *staff* posting; Baker Botts' Flo classification is weak).
+So `classify.py` remains in the repo as the **verification/refresh** tool: run it
+from any machine with open egress (or the `classify-firms` Action) to re-probe
+each careers page and confirm/correct `ats_type` / `ats_identifier` /
+`workday_host` in place. It was originally built to bootstrap classification;
+with the search-derived data already in place its role is now to verify and keep
+it fresh.
 
 ## 3. Firm list: source, date, and intersection caveats
 
@@ -50,41 +55,48 @@ Target set = **Vault Law 100 ∩ Am Law 200**.
   Paywalled; not enumerable in full.
 
 Because both lists are gated, `firms.yaml` is a **best-effort intersection**:
-**81 firms**. The research core (~69) is the high-confidence intersection
-reconstructed from confirmed search anchors + domain knowledge; ~12 more
-well-known Am Law 100/200 + Vault-ranked firms were added from domain knowledge
-to approach the spec's expected ~80–100 range. The Vault "tail" (roughly ranks
-70–100) could not be fully enumerated, so the list may be **short by ~5–15
-firms**. Sources + dates are recorded at the top of `firms.yaml`.
+**73 firms** — the high-confidence core (firms confidently on *both* lists),
+reconstructed from confirmed search anchors + domain knowledge. The Vault "tail"
+(roughly ranks 70–100) could not be enumerated from search snippets, so the list
+is likely **short by ~10–20 firms** of the full intersection (the spec's expected
+~80–100). Rather than pad it with speculative unknowns, I kept the defensible
+core and documented the gap. Sources + dates are at the top of `firms.yaml`;
+the full per-firm breakdown is in that file's `coverage_summary`.
 
 Firms **flagged** rather than silently dropped/kept (see inline `note:` fields):
 
 - **Magic Circle firms excluded**: Freshfields, Clifford Chance, Linklaters are
   Vault-ranked but London-HQ and tracked in the Global 200, generally **not** in
-  the Am Law 200 → excluded from the intersection.
+  the Am Law 200 → excluded from the intersection (noted where researched).
 - **A&O Shearman**: kept but flagged — post-2024-merger US revenue reporting is
   ambiguous; may or may not belong.
 - **Kramer Levin / HSF Kramer**: flagged — after its merger it likely dropped out
   of the current Vault 100.
-- **Boutiques (Kellogg Hansen, Keker Van Nest, Kobre & Kim)**: Vault-ranked with
-  very high revenue-per-lawyer, but Am Law 200 *membership* is uncertain given
-  small headcount — flagged for verification.
-- **"Kaye Scholer"**: included only as a **dedup marker** — it merged into
-  Arnold & Porter in 2017 and is a duplicate of "Arnold & Porter Kaye Scholer".
-  Remove it if you don't want the reminder.
+- **10 large-revenue firms** (Gunderson, Foley, Baker McKenzie, Greenberg
+  Traurig, DLA Piper, Reed Smith, Troutman Pepper Locke, Crowell & Moring, Morgan
+  Lewis, Holland & Knight) are solidly Am Law 100/200 but their *Vault-100*
+  placement couldn't be independently confirmed — flagged in `coverage_summary`
+  for re-verification against the full Vault list.
+- **Tail firms not enumerable** (Keker Van Nest, Kobre & Kim, Nixon Peabody,
+  Venable, Seyfarth, Duane Morris, Faegre Drinker, Ballard Spahr, …) are named in
+  `coverage_summary` as known-missing candidates so the gap is explicit.
 
 ## 4. Known coverage ceiling (the risk the spec asked me to record)
 
-A meaningful share of big-law entry-level hiring flows through **OCI /
-Symplicity / Flo Recruit** school-gated portals and **never appears on public
-careers pages**. Public-page coverage is therefore inherently partial — this
-tool sees only what firms post publicly. `classify.py` recognizes Symplicity /
-Flo Recruit / viGlobal signatures and marks those firms `ats_type: other`
-(recognized but not publicly queryable), which makes the ceiling visible: after
-running it, `firms.yaml` will show roughly how many firms surface entry roles on
-a queryable public ATS vs. how many are gated. Until then, `public_entry_level`
-is `unknown` for all firms. Expect the genuinely-public entry-associate set to be
-a minority of firms.
+A meaningful share of big-law entry-level hiring flows through **OCI / Symplicity
+/ Flo Recruit / viRecruit** school-gated or vendor portals and **never appears on
+a publicly queryable careers API**. The classified data makes this ceiling
+concrete: of the 73 firms, only **~22 sit on a fetcher-supported public ATS**
+(2 Greenhouse + 20 Workday) — the monitor actively polls those. The remaining
+~51 are `flo_recruit` (10), `virecruit` (4), `viglobal` (1), or `other` (29,
+mostly iCIMS / Taleo / custom / email) plus 7 `unknown`, and are **skipped at
+runtime** because there is no public JSON endpoint to poll. `public_entry_level`
+is `true` for ~55 firms (they surface summer/entry/3L programs on some public
+page) but that page usually isn't machine-pollable. **Net: public-API coverage
+of entry-level roles is inherently partial — expect the monitor to catch new
+postings only at the Greenhouse/Workday firms.** Extending coverage would mean
+adding fetchers for Flo Recruit / viRecruit / iCIMS / Taleo (several are
+scriptable) — deferred (see §9).
 
 ## 5. State / diff model
 
@@ -135,8 +147,12 @@ matching.
 
 ## 9. Deferred / not done
 
-- Actual ATS classification of the 81 firms (blocked by sandbox network; run
-  `classify.py`).
-- Completing the Vault tail to a full ~90–100 firm list (blocked by paywalls).
-- Weekly heartbeat email; web UI over `state.db` (interface left in place).
-- Verifying the flagged boutique/merger firms' actual list membership.
+- **Live verification** of the search-derived ATS data (run `classify.py` /
+  the `classify-firms` Action from an environment with open egress).
+- **Fetchers for gated/vendor ATSs** (Flo Recruit, viRecruit, iCIMS, Taleo) so
+  the ~51 currently-skipped firms could be polled — several are scriptable.
+- Completing the Vault tail to the full ~80–100 firm list (blocked by paywalls).
+- Re-confirming the 10 flagged large-firm Vault placements and the
+  merger/boutique edge cases against the full Vault list.
+- Weekly heartbeat email; web UI over `state.db` (renderer interface left in
+  place for it).

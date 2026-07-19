@@ -1,575 +1,572 @@
-# BigLaw entry-level associate job-posting monitor — firm registry (firms.yaml)
+# BigLaw entry-level associate job-posting monitor — firm dataset
+# CONFIDENCE / METHOD: WebFetch and all direct HTTP egress (curl/bash) were blocked
+# by the org proxy (HTTP 403 on every host). Only WebSearch worked. Both source
+# rankings are gated (Vault paywall / law.com subscription) and could not be
+# enumerated in full. The firm set is the high-confidence intersection CORE
+# (firms confidently on BOTH the Vault 100 and the Am Law 200), reconstructed from
+# confirmed search anchors + domain knowledge — NOT the complete ~85-95.
+# ATS fields were verified by sub-agents that inferred each firm's ATS from URLs
+# appearing in WebSearch results (never guessing tokens). 66 of 68 firms classified;
+# 2 (Jenner, Greenberg Traurig) use branded custom portals with no ATS host exposed.
 #
-# Schema per firm (consumed by fetchers/base.py Firm.from_dict):
-#   name:               canonical firm name
-#   careers_url:        attorney/associate careers page (used by generic fetcher
-#                       and by classify.py to auto-detect the ATS)
-#   ats_type:           greenhouse | lever | workday | generic | unknown
-#   ats_identifier:     greenhouse -> board token; lever -> company slug;
-#                       workday -> "tenant/site"; generic -> null (uses careers_url)
-#   public_entry_level: true|false|unknown (does the firm post entry roles publicly)
-#   note:               free-form; used here to flag uncertainty
-#   (optional) workday_host / workday_locale / render: playwright  -> ATS overrides
+# WHAT ACTUALLY FETCHES: only ats_type greenhouse | lever | workday have public
+# fetchers, so the monitor actively polls the 2 Greenhouse + 20 Workday firms
+# (~22). The rest — flo_recruit, virecruit, viglobal, other, unknown — are
+# recognized but not publicly queryable, so they are SKIPPED at runtime (never
+# crash). This is the public-coverage ceiling: most BigLaw first-year hiring runs
+# through Flo Recruit / viRecruit / iCIMS / Taleo / OCI, not a public JSON API.
 #
-# CONFIDENCE / HOW THIS WAS BUILT: this dataset was assembled in a sandbox where
-# ALL direct HTTP egress (curl + WebFetch to arbitrary hosts) was blocked by org
-# policy (HTTP 403 on every host), so no firm's careers page could be probed.
-# The list is therefore the best-effort Vault-100 ∩ Am-Law-200 intersection from
-# search anchors + domain knowledge, and EVERY firm is ats_type: unknown because
-# guessing ATS tokens is explicitly disallowed. See DECISIONS.md.
-#
-# >>> TO MAKE THIS FUNCTIONAL: run `python classify.py --write` from a machine
-#     (or GitHub Actions) with open egress. It probes each careers_url, detects
-#     the ATS, and fills in ats_type / ats_identifier in place. Firms it cannot
-#     classify stay `unknown` and are skipped at runtime (never crash). <<<
+# The ATS data here is search-derived, not live-verified. Run `python classify.py`
+# from a machine with open egress to re-probe careers pages and confirm/refresh
+# ats_type / ats_identifier / workday_host. See README.md and DECISIONS.md.
 
 sources:
   vault_100:
     url: "https://vault.com/best-companies-to-work-for/law/top-100-law-firms-rankings"
     year: 2026   # "2026" edition, released June 2025, from a Jan-Mar 2025 survey of 20,000+ associates
     note: >
-      Full ranked list is gated on vault.com and could not be enumerated via
-      search. Confirmed top 10: 1 Cravath, 2 Wachtell, 3 Skadden, 4 Latham,
-      5 Kirkland, 6 Sullivan & Cromwell, 7 Davis Polk, 8 Paul Weiss, 9 Milbank,
-      10 Simpson Thacher. Other confirmed placements: Ropes & Gray #20,
-      McDermott Will & Schulte #46, Jenner & Block #43, A&O Shearman #56-62.
-      A newer 2026-2027 edition (released April 2026) also exists.
+      Full ranked list gated on vault.com. Confirmed top 10: 1 Cravath, 2 Wachtell,
+      3 Skadden, 4 Latham, 5 Kirkland, 6 Sullivan & Cromwell, 7 Davis Polk,
+      8 Paul Weiss, 9 Milbank, 10 Simpson Thacher. Also confirmed: Ropes & Gray #20,
+      Jenner & Block #43, McDermott Will & Schulte #46, A&O Shearman #56-62,
+      Kramer Levin was #92 (now merged to HSF Kramer). A newer 2026-2027 edition
+      (released April 2026) also exists.
   amlaw_200:
     url: "https://www.law.com/americanlawyer/the-2025-am-law-200/"
     year: 2025   # 2025 Am Law 200, based on calendar-year 2024 gross revenue
     note: >
-      Paywalled on law.com; not enumerable via search. The Am Law 100/200 ranks
-      US-headquartered (or US-reporting/verein) firms by gross revenue. London-HQ
-      Magic Circle firms (Freshfields, Clifford Chance, Linklaters) are generally
-      NOT in the Am Law 200 (covered instead in the separate Global 200), so they
-      are EXCLUDED from the intersection even though they may appear on Vault.
-      A 2026 Am Law 200 (2025 revenue) also exists at
+      Paywalled on law.com. The Am Law 100/200 ranks US-HQ (or US-reporting/verein)
+      firms by gross revenue; London-HQ Magic Circle firms (Freshfields, Clifford
+      Chance, Linklaters) are in the separate Global 200, NOT the Am Law 200, so they
+      are EXCLUDED from the intersection. 2026 edition (2025 revenue) also exists at
       law.com/americanlawyer/2026/05/05/the-2026-am-law-200-ranked-by-gross-revenue/.
 
 firms:
+  # ---- Batch 1 ----
   - name: "Cravath, Swaine & Moore"
-    careers_url: "https://www.cravath.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.cravath.com/careers/index.html"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #1. Am Law 100. ATS unverified (sub-agent result not returned to context)."
+    public_entry_level: true
+    note: "Vault #1. Custom site; attorney apps email-based (resume/transcript to practice-area email). No third-party ATS. 2L summer + 3L incoming surfaced publicly."
   - name: "Wachtell, Lipton, Rosen & Katz"
-    careers_url: "https://www.wlrk.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.wlrk.com/careers/"
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #2. Am Law 100 (very high RPL). Entry-level hiring almost entirely via OCI. ATS unverified."
+    public_entry_level: true
+    note: "Vault #2. 2L Summer apply at florecruit.com/v2/app/wlrk/... A Workday 'introduce yourself' tenant (vhr_wachtelllipton/wlrk) also exists but real flow is Flo Recruit."
   - name: "Skadden, Arps, Slate, Meagher & Flom"
     careers_url: "https://www.skadden.com/careers"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: workday
+    ats_identifier: "skadden/Skadden_Careers"
+    workday_host: skadden.wd5.myworkdayjobs.com
     public_entry_level: unknown
-    note: "Vault #3. Am Law 100. ATS unverified."
+    note: "Vault #3. Confirmed skadden.wd5.myworkdayjobs.com/Skadden_Careers. Postings seen were lateral/staff; entry-level vs OCI unconfirmed."
   - name: "Latham & Watkins"
-    careers_url: "https://www.lw.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.lwcareers.com/en/"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #4. Am Law 100 (top-grossing). ATS unverified."
+    public_entry_level: true
+    note: "Vault #4. iCIMS: careers-lw.icims.com / ukcareers-lw.icims.com (no per-firm token). US early-career section present."
   - name: "Kirkland & Ellis"
-    careers_url: "https://www.kirkland.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.kirkland.com/careers/united-states/laterals"
+    ats_type: other
     ats_identifier: null
     public_entry_level: unknown
-    note: "Vault #5. Am Law #1 by revenue. ATS unverified."
+    note: "Vault #5, Am Law #1 revenue. Staff on custom staffjobsus.kirkland.com; attorney laterals email-based. No confirmed ATS token."
   - name: "Sullivan & Cromwell"
-    careers_url: "https://www.sullcrom.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.sullcrom.com/careers/"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #6. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Vault #6. Custom portal careers.sullcrom.com with 'Summer/Incoming Associate Login' (pattern suggests viRecruit but not URL-confirmed). Entry-level surfaced."
   - name: "Davis Polk & Wardwell"
-    careers_url: "https://www.davispolk.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.davispolk.com/careers/laterals-clerks"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #7. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Vault #7. Attorney apps email-based; business roles on custom careers.davispolk.com. 'Law Students & Trainees' page present."
   - name: "Paul, Weiss, Rifkind, Wharton & Garrison"
     careers_url: "https://www.paulweiss.com/careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #8. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Vault #8. Oracle Taleo: paulweiss.taleo.net/careersection/ex/joblist.ftl (no public token). Lateral + first-year + clerks apply via portal."
   - name: "Milbank"
-    careers_url: "https://www.milbank.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.milbank.com/en/careers/index.html"
+    ats_type: other
     ats_identifier: null
     public_entry_level: unknown
-    note: "Vault #9. Am Law 100. ATS unverified."
+    note: "Vault #9. iCIMS: careers-milbank.icims.com (no token). Entry-level posting not confirmed."
   - name: "Simpson Thacher & Bartlett"
-    careers_url: "https://www.stblaw.com/careers"
-    ats_type: unknown
-    ats_identifier: null
+    careers_url: "https://www.stblaw.com/your-career"
+    ats_type: workday
+    ats_identifier: "stblaw/careers"
+    workday_host: stblaw.wd1.myworkdayjobs.com
     public_entry_level: unknown
-    note: "Vault #10. Am Law 100. ATS unverified."
+    note: "Vault #10. Confirmed stblaw.wd1.myworkdayjobs.com/careers. Entry vs OCI unconfirmed."
   - name: "Gibson, Dunn & Crutcher"
-    careers_url: "https://www.gibsondunn.com/careers"
-    ats_type: unknown
-    ats_identifier: null
+    careers_url: "https://www.gibsondunn.com/careers/"
+    ats_type: greenhouse
+    ats_identifier: "gibsondunn"
     public_entry_level: unknown
-    note: "Vault top-15. Am Law 100. ATS unverified."
+    note: "FLAG: Greenhouse token 'gibsondunn' confirmed (job-boards.greenhouse.io/gibsondunn) but that posting was STAFF; attorney apply path may be viRecruit/custom CMS. Token reported because actually seen."
   - name: "Cleary Gottlieb Steen & Hamilton"
     careers_url: "https://www.clearygottlieb.com/careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault top-20. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "iCIMS: careers-clearygottlieb.icims.com (no token). Online application accepted."
   - name: "Debevoise & Plimpton"
     careers_url: "https://www.debevoise.com/careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault top-20. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "AllHires ATS: debevoise.allhires.com/app (no public token). 3L + lateral apply via portal."
   - name: "Weil, Gotshal & Manges"
-    careers_url: "https://www.weil.com/careers"
-    ats_type: unknown
-    ats_identifier: null
+    careers_url: "https://careers.weil.com/"
+    ats_type: workday
+    ats_identifier: "weil/work_at_weil"
+    workday_host: weil.wd1.myworkdayjobs.com
     public_entry_level: unknown
-    note: "Vault top-20. Am Law 100. ATS unverified."
+    note: "Confirmed weil.wd1.myworkdayjobs.com/work_at_weil. Entry-level posting unconfirmed."
+
+  # ---- Batch 2 ----
   - name: "Covington & Burling"
-    careers_url: "https://www.cov.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.cov.com/en/careers/lawyers"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "No self-apply ATS; email submission to office recruiting contacts. Law-student/summer/3L/clerk pages public."
   - name: "Sidley Austin"
-    careers_url: "https://www.sidley.com/en/careers/"
-    ats_type: unknown
+    careers_url: "https://www.sidley.com/en/careers"
+    ats_type: other
     ats_identifier: null
     public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    note: "iCIMS: careers-sidley.icims.com/jobs/intro (no token). Board skews lateral/staff; entry likely via OCI."
   - name: "Ropes & Gray"
-    careers_url: "https://www.ropesgray.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.ropesgrayrecruiting.com/en/us"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #20 (confirmed). Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Vault #20. Custom recruiting site ropesgrayrecruiting.com; no vendor ATS host confirmed. US Law Students & Graduates page present."
   - name: "Arnold & Porter Kaye Scholer"
-    careers_url: "https://www.arnoldporter.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.arnoldporter.com/en/careers/lawyers/lateral-opportunities"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Custom CMS job listings on-site (arnoldporter.com/.../jobs-listing-folder/{id}). 2026 US Summer Associate + entry roles public."
   - name: "WilmerHale"
-    careers_url: "https://www.wilmerhale.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.wilmerhale.com/en/careers/lawyers"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "SilkRoad: wilmerhalecareers.silkroad.com/wilmerhaleext/EmploymentListings.html. 'Entry Level or Lateral Attorneys' page."
   - name: "Morrison & Foerster"
-    careers_url: "https://www.mofo.com/careers"
-    ats_type: unknown
+    careers_url: "https://careers.mofo.com/"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: false
+    note: "Attorney board mofo.career.page/jobs/{id} (vendor unidentified); also Taleo (org MOFO) + flo_recruit for OCI. Explicitly does NOT accept first-year/clerk submissions publicly."
   - name: "Paul Hastings"
     careers_url: "https://www.paulhastings.com/careers"
-    ats_type: unknown
+    ats_type: virecruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "viRecruit (vi by Aderant): jobs.phextranet.com/PH-Attorney/viRecruitSelfApply/ReDefault.aspx. Students apply rolling."
   - name: "Cadwalader, Wickersham & Taft"
-    careers_url: "https://www.cadwalader.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.cadwalader.com/careers/experienced-attorneys/associate-openings"
+    ats_type: virecruit
     ats_identifier: null
     public_entry_level: unknown
-    note: "Vault 100 (dropped 8 spots in 2026-2027, confirmed). Am Law 100/200. ATS unverified."
+    note: "Vault 100 (dropped 8 spots). viRecruit: recruiting.cwt.com/videsktop/viRecruitSelfApply/RecDefault.aspx. Campus site makehistory.cadwalader.com."
   - name: "Fried, Frank, Harris, Shriver & Jacobson"
     careers_url: "https://www.friedfrank.com/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100/200. ATS unverified."
+    ats_type: greenhouse
+    ats_identifier: "friedfrankharrisshriverjacobsonllp"
+    public_entry_level: true
+    note: "Greenhouse confirmed: job-boards.greenhouse.io/embed/job_board?for=friedfrankharrisshriverjacobsonllp. Summer Associate Program surfaced."
   - name: "Willkie Farr & Gallagher"
-    careers_url: "https://www.willkie.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.willkie.com/careers/legal-professional/experienced-lawyers/discover-more-and-apply/united-states"
+    ats_type: virecruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "viRecruit: careers.willkie.com/viRecruitSelfApply/ReDefault.aspx. 2027 2L Summer Associate Program surfaced."
   - name: "Wilson Sonsini Goodrich & Rosati"
-    careers_url: "https://www.wsgr.com/en/careers.html"
-    ats_type: unknown
-    ats_identifier: null
+    careers_url: "https://careers.wsgr.com/openings/"
+    ats_type: workday
+    ats_identifier: "wsgr/WSGR"
+    workday_host: wsgr.wd1.myworkdayjobs.com
     public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    note: "Confirmed wsgr.wd1.myworkdayjobs.com/WSGR (careers.wsgr.com is the front-end)."
   - name: "Cooley"
-    careers_url: "https://www.cooley.com/careers"
-    ats_type: unknown
-    ats_identifier: null
+    careers_url: "https://www.cooley.com/careers/lawyers"
+    ats_type: workday
+    ats_identifier: "cooley/Cooley_US_LLP"
+    workday_host: cooley.wd1.myworkdayjobs.com
     public_entry_level: unknown
-    note: "Vault 100 (top firm N. California regionally). Am Law 100. ATS unverified."
+    note: "Confirmed cooley.wd1.myworkdayjobs.com/Cooley_US_LLP."
   - name: "Quinn Emanuel Urquhart & Sullivan"
-    careers_url: "https://www.quinnemanuel.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.quinnemanuel.com/careers/"
+    ats_type: other
     ats_identifier: null
     public_entry_level: unknown
-    note: "Vault 100 (leader in commercial litigation). Am Law 100. ATS unverified."
+    note: "No online ATS; email submission to per-office recruiting contacts. US offices accepting associate applications."
   - name: "Jones Day"
-    careers_url: "https://www.jonesday.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.jonesday.com/en/careers/positions/experienced-lawyers"
+    ats_type: virecruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Medium confidence: offices use 'SelfApply' (matches viRecruit's viRecruitSelfApply), no direct URL captured. 'Law Students and Entry-Level Lawyers (U.S.)' page present."
+
+  # ---- Batch 3 ----
   - name: "Mayer Brown"
-    careers_url: "https://www.mayerbrown.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.mayerbrown.com/en/careers/experienced-lawyers"
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Confirmed florecruit.com/v2/app/forward/firms/mayerbrown. Summer/1L at mayerbrownfutures.com."
   - name: "White & Case"
     careers_url: "https://www.whitecase.com/careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Split stack: lateral/general on Taleo (whitecase.taleo.net); summer associate apply via Flo Recruit (florecruit.com/v2/app/wc/...)."
   - name: "Vinson & Elkins"
-    careers_url: "https://www.velaw.com/careers/"
-    ats_type: unknown
+    careers_url: "https://www.velaw.com/careers/experienced-lawyers/"
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Attorneys via Flo (florecruit.com/v2/app/forward/firms/velaw). Business/paralegal on Taleo (velaw.taleo.net)."
   - name: "Baker Botts"
-    careers_url: "https://www.bakerbotts.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.bakerbotts.com/careers/lateral-lawyers"
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "LOW confidence. Only Flo Forward aggregator listings seen (not firm-token proof); viRecruit also plausible. Summer program public."
   - name: "Proskauer Rose"
     careers_url: "https://www.proskauer.com/careers"
-    ats_type: unknown
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Confirmed florecruit.com/v2/app/proskauer/... (firm token proskauer). Summer program public."
   - name: "Dechert"
-    careers_url: "https://www.dechert.com/careers.html"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    careers_url: "https://www.dechert.com/careers/experienced-lawyers.html"
+    ats_type: workday
+    ats_identifier: "dechert/DechertCareers"
+    workday_host: dechert.wd12.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed dechert.wd12.myworkdayjobs.com/DechertCareers."
   - name: "King & Spalding"
     careers_url: "https://www.kslaw.com/pages/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    ats_type: workday
+    ats_identifier: "kslaw/careers"
+    workday_host: kslaw.wd1.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed kslaw.wd1.myworkdayjobs.com/careers."
   - name: "Fenwick & West"
     careers_url: "https://www.fenwick.com/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (tech/life sciences). Am Law 100/200. ATS unverified."
+    ats_type: workday
+    ats_identifier: "fenwick/Fenwick_External_Careers"
+    workday_host: fenwick.wd1.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed fenwick.wd1.myworkdayjobs.com/Fenwick_External_Careers."
   - name: "Goodwin Procter"
-    careers_url: "https://www.goodwinlaw.com/en/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    careers_url: "https://www.goodwinlaw.com/en/careers-pages/careers"
+    ats_type: workday
+    ats_identifier: "goodwinprocter/External_Careers"
+    workday_host: goodwinprocter.wd5.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed goodwinprocter.wd5.myworkdayjobs.com/External_Careers."
   - name: "McDermott Will & Schulte"
-    careers_url: "https://www.mwe.com/careers/"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #46 (confirmed; formed via 2025 merger, formerly McDermott Will & Emery). Am Law 100. ATS unverified."
+    careers_url: "https://careers.mcdermottlaw.com/experienced-lawyers/"
+    ats_type: workday
+    ats_identifier: "mwe/mwe_careers"
+    workday_host: mwe.wd5.myworkdayjobs.com
+    public_entry_level: true
+    note: "Vault #46. Confirmed mwe.wd5.myworkdayjobs.com/mwe_careers (tenant 'mwe' kept post-rebrand)."
   - name: "Akin Gump Strauss Hauer & Feld"
-    careers_url: "https://www.akingump.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.akingump.com/en/careers/lawyers"
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Attorneys via Flo (florecruit.com/v2/app/forward/firms/ag). Business-services on SilkRoad (jobs.silkroad.com/akingump)."
   - name: "Winston & Strawn"
-    careers_url: "https://www.winston.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://www.winston.com/en/careers/experienced-attorneys"
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Medium confidence: florecruit.com/v2/app/forward/firms/winston. viGlobal hinted in summary but no concrete URL. Summer + scholarships public."
   - name: "Hogan Lovells"
-    careers_url: "https://www.hoganlovells.com/en/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100 (verein, US-reporting). ATS unverified."
+    careers_url: "https://www.hlc.com/en/global-careers/united-states/careers-in-the-united-states"
+    ats_type: workday
+    ats_identifier: "hoganlovells/Search"
+    workday_host: hoganlovells.wd3.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed hoganlovells.wd3.myworkdayjobs.com/Search. Now branded Hogan Lovells Cadwalader; tenant still hoganlovells."
+  # NOTE: Freshfields researched (Workday freshfields/FBD_101) but EXCLUDED — London-HQ Magic Circle, not Am Law 200.
+
+  # ---- Batch 4 ----
   - name: "A&O Shearman"
-    careers_url: "https://www.aoshearman.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://careers.aoshearman.com/en/search-jobs"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #56-62 (confirmed). 2024 merger of Allen & Overy + Shearman & Sterling; Shearman was Am Law 100 so US arm should be in Am Law 200, but post-merger reporting is ambiguous — FLAG."
+    public_entry_level: true
+    note: "FLAG (intersection): 2024 A&O + Shearman merger; Shearman was Am Law 100 so US arm likely in Am Law 200, post-merger reporting ambiguous. ATS = Kenexa BrassRing (jobs.aoshearman.com/tgwebhost/... PartnerId=30147/SiteId=5040); also Flo for some early careers."
   - name: "Norton Rose Fulbright"
     careers_url: "https://www.nortonrosefulbright.com/en-us/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100 (verein). ATS unverified."
+    ats_type: workday
+    ats_identifier: "nrf/External"
+    workday_host: nrf.wd3.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed nrf.wd3.myworkdayjobs.com/External plus a /Graduates site."
   - name: "Orrick, Herrington & Sutcliffe"
-    careers_url: "https://www.orrick.com/en/Careers"
-    ats_type: unknown
+    careers_url: "https://talent.orrick.com/jobs"
+    ats_type: viglobal
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Med-high confidence: talent.orrick.com (vi by Aderant / viRecruit hosted pattern; 'virecruit' not literally in URL). Job IDs like talent.orrick.com/jobs/1628."
   - name: "Gunderson Dettmer"
-    careers_url: "https://www.gunder.com/careers/"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (VC/emerging companies). Am Law #101 (2025, top of Second Hundred — confirmed IN Am Law 200). ATS unverified."
+    careers_url: "https://www.gunder.com/en/careers"
+    ats_type: workday
+    ats_identifier: "gunder/Gunderson"
+    workday_host: gunder.wd5.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed gunder.wd5.myworkdayjobs.com/Gunderson (secondary JazzHR page also exists). Am Law #101 = top of Second Hundred, confirmed IN Am Law 200."
   - name: "Jenner & Block"
     careers_url: "https://www.jenner.com/en/careers"
     ats_type: unknown
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault #43 (confirmed; up 17 spots). Am Law 100/200. ATS unverified."
+    public_entry_level: true
+    note: "Vault #43. Apply flow at jenner.com/joinus/Apply is branded/custom; no ATS host observed. 2027 summer + lateral open."
   - name: "Foley & Lardner"
     careers_url: "https://www.foley.com/careers/"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely; not individually confirmed). Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "iCIMS: careers-foley.icims.com/jobs/intro (no token)."
   - name: "Katten Muchin Rosenman"
     careers_url: "https://katten.com/careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely; not individually confirmed). Am Law 100/200. ATS unverified."
+    public_entry_level: true
+    note: "Oracle Taleo: phg.tbe.taleo.net/.../viewRequisition?org=KATTMUCH2 (Taleo org token KATTMUCH2). 1L/2L summer public."
   - name: "Perkins Coie"
-    careers_url: "https://www.perkinscoie.com/en/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    careers_url: "https://www.perkinscoie.com/careers"
+    ats_type: workday
+    ats_identifier: "perkinscoie/perkinscoieexternal"
+    workday_host: perkinscoie.wd1.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed perkinscoie.wd1.myworkdayjobs.com/perkinscoieexternal."
   - name: "Baker McKenzie"
-    careers_url: "https://www.bakermckenzie.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://careers.bakermckenzie.com/en_US/opportunities/SearchJobs"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100 (verein). ATS unverified."
+    public_entry_level: true
+    note: "Med confidence: Avature (careers.bakermckenzie.com/en_US/opportunities/SearchJobs + /TalentCommunity — Avature signature). Summer program public."
   - name: "Sheppard, Mullin, Richter & Hampton"
-    careers_url: "https://www.sheppardmullin.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.sheppard.com/careers"
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely). Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Med confidence: florecruit.com/v2/app/forward/firms/sheppardmullin (likely OCI/early careers); lateral apply is branded/custom."
   - name: "Morgan, Lewis & Bockius"
     careers_url: "https://www.morganlewis.com/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    ats_type: workday
+    ats_identifier: "morganlewis/morganlewis"
+    workday_host: morganlewis.wd5.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed morganlewis.wd5.myworkdayjobs.com/morganlewis."
   - name: "Holland & Knight"
     careers_url: "https://www.hklaw.com/en/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely). Am Law 100. ATS unverified."
+    ats_type: workday
+    ats_identifier: "hklaw/Holland_Knight"
+    workday_host: hklaw.wd1.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed hklaw.wd1.myworkdayjobs.com/Holland_Knight."
   - name: "Greenberg Traurig"
     careers_url: "https://www.gtlaw.com/en/careers"
     ats_type: unknown
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Custom CMS careers section; no ATS host surfaced. Law student + attorney tracks public."
+  # NOTE: Clifford Chance researched (ats unknown, jobs.cliffordchance.com) but EXCLUDED — London-HQ Magic Circle, not Am Law 200.
+
+  # ---- Batch 5 ----
   - name: "DLA Piper"
     careers_url: "https://www.dlapiper.com/en-us/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100 (verein). ATS unverified."
+    ats_type: workday
+    ats_identifier: "dlapiper/dlapiper"
+    workday_host: dlapiper.wd1.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed dlapiper.wd1.myworkdayjobs.com/dlapiper. An entry-level (non-partnership track) attorney role appeared on the board."
   - name: "Alston & Bird"
-    careers_url: "https://www.alston.com/en/careers/"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100. Am Law 100. ATS unverified."
+    careers_url: "https://www.alston.com/en/careers"
+    ats_type: workday
+    ats_identifier: "alston/ExternalCareer"
+    workday_host: alston.wd1.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed alston.wd1.myworkdayjobs.com/ExternalCareer. Board skews lateral; law-student section present."
   - name: "Fish & Richardson"
-    careers_url: "https://www.fr.com/careers/"
-    ats_type: unknown
+    careers_url: "https://careers.fr.com/"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (IP-focused; membership likely). Am Law 100/200. ATS unverified."
+    public_entry_level: true
+    note: "Self-hosted/white-labeled portal at careers.fr.com; no third-party vendor host found. 2026 Summer Associate program public."
   - name: "HSF Kramer (Kramer Levin)"
-    careers_url: "https://www.kramerlevin.com/en/careers/"
-    ats_type: unknown
+    careers_url: "https://careers.hsfkramer.com/global/en/us/home"
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Kramer Levin was Vault #92 last year, now merged into HSF Kramer (Herbert Smith Freehills Kramer) and does NOT appear in the top 100 this cycle — FLAG: may fall out of the current intersection."
+    public_entry_level: true
+    note: "FLAG: Kramer Levin was Vault #92; merged into HSF Kramer and may have fallen off current top 100. ATS: florecruit.com/v2/app/forward/firms/hsfkramer + legacy florecruit.com/v2/app/kramerlevin/... The merged global careers site may itself be a separate ATS (Phenom/Avature-style)."
   - name: "Schulte Roth & Zabel"
     careers_url: "https://www.srz.com/en/careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely). Am Law 100/200. ATS unverified."
+    public_entry_level: true
+    note: "Email-based (recruiting@srz.com attorneys/summer; humanresources@srz.com staff). No third-party ATS URL. Summer program public."
   - name: "Cahill Gordon & Reindel"
     careers_url: "https://www.cahill.com/careers"
-    ats_type: unknown
+    ats_type: flo_recruit
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely). Am Law 200. ATS unverified."
+    public_entry_level: true
+    note: "Confirmed florecruit.com/v2/app/cahill/jobs/.../apply. Summer + current-openings pages public."
   - name: "Hughes Hubbard & Reed"
     careers_url: "https://www.hugheshubbard.com/careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely). Am Law 200. ATS unverified."
+    public_entry_level: true
+    note: "Only hugheshubbard.com/careers seen; no third-party host. OCI + summer program public. Custom/self-hosted."
   - name: "Boies Schiller Flexner"
-    careers_url: "https://www.bsfllp.com/careers"
-    ats_type: unknown
+    careers_url: "https://www.bsfllp.com/careers/overview.html"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (litigation). Am Law 100/200. ATS unverified."
+    public_entry_level: true
+    note: "On-site apply link + email to Director of Attorney Recruiting; no third-party ATS URL. Welcomes 3Ls/clerks. Custom."
   - name: "Munger, Tolles & Olson"
-    careers_url: "https://www.mto.com/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (Am Law A-List #1 2025). In Am Law rankings (confirmed mentioned). ATS unverified."
+    careers_url: "https://www.mto.com/careers/"
+    ats_type: workday
+    ats_identifier: "mto/MTO_Careers"
+    workday_host: mto.wd1.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed mto.wd1.myworkdayjobs.com/MTO_Careers. Vault 100 + Am Law A-List #1 (2025)."
   - name: "Williams & Connolly"
     careers_url: "https://www.wc.com/Careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (litigation). Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "On-site Apply-Online form (wc.com/Careers/Associates/Apply-Online + summer page); no third-party host. 3L + summer apply online."
   - name: "Reed Smith"
-    careers_url: "https://www.reedsmith.com/en/careers"
-    ats_type: unknown
+    careers_url: "https://careers.reedsmith.com/jobs/home/"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely). Am Law 100. ATS unverified."
+    public_entry_level: true
+    note: "Oracle PeopleSoft (HCM 9.2) self-hosted: recruit.reedsmith.com/psc/HCM92PRD/... Not a Workday/Greenhouse/Lever vendor."
   - name: "Troutman Pepper Locke"
     careers_url: "https://www.troutman.com/careers/"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely; formerly Troutman Pepper, 2025 merger with Locke Lord). Am Law 100. ATS unverified."
+    ats_type: workday
+    ats_identifier: "troutman/TPRecruit1"
+    workday_host: troutman.wd5.myworkdayjobs.com
+    public_entry_level: true
+    note: "Confirmed troutman.wd5.myworkdayjobs.com/TPRecruit1 (2025 Troutman Pepper + Locke Lord merger)."
   - name: "Crowell & Moring"
     careers_url: "https://www.crowell.com/en/careers"
-    ats_type: unknown
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (membership likely). Am Law 100/200. ATS unverified."
+    public_entry_level: true
+    note: "SmartRecruiters (slug CrowellMoring): careers.smartrecruiters.com/CrowellMoring/lawyers. SmartRecruiters not in the enum set, so other; slug noted here."
   - name: "Susman Godfrey"
-    careers_url: "https://www.susmangodfrey.com/careers/"
-    ats_type: unknown
+    careers_url: "https://www.susmangodfrey.com/career/open-positions/"
+    ats_type: other
     ats_identifier: null
-    public_entry_level: unknown
-    note: "Vault 100 (litigation boutique). Am Law 100 confirmed (#2 in revenue-per-lawyer). ATS unverified."
+    public_entry_level: true
+    note: "Email-based (arynearson@susmangodfrey.com). Am Law 100 (#2 RPL). Summer + 1L fellowship public; associates must clerk first."
 
-  # --- Additional confident intersection members (added from domain knowledge to
-  # approach the expected ~80-100 range; the research core stopped at 69 because
-  # the Vault tail could not be enumerated from search snippets). Each is a
-  # well-known Am Law 100/200 firm that is also Vault-ranked. ATS still unverified;
-  # run classify.py to populate ats_type/ats_identifier. Uncertain ones flagged.
-  - name: "Venable"
-    careers_url: "https://www.venable.com/careers"
+  # ---- Batch 6: additional confirmed Vault-100 members surfaced by the membership
+  # agent (Am Law 100/200 firms); ATS NOT researched (no ATS sub-agent batch ran) ----
+  - name: "K&L Gates"
+    careers_url: "https://www.klgates.com/careers"
     ats_type: unknown
     ats_identifier: null
     public_entry_level: unknown
-    note: "Am Law 100. Vault-ranked. ATS unverified."
-  - name: "Seyfarth Shaw"
-    careers_url: "https://www.seyfarth.com/careers.html"
+    note: "Vault #49 (2026, confirmed). Am Law 100. ATS not researched."
+  - name: "Pillsbury Winthrop Shaw Pittman"
+    careers_url: "https://www.pillsburylaw.com/en/careers.html"
     ats_type: unknown
     ats_identifier: null
     public_entry_level: unknown
-    note: "Am Law 100. Vault-ranked. ATS unverified."
-  - name: "Duane Morris"
-    careers_url: "https://www.duanemorris.com/site/careers.html"
+    note: "Vault #58 (2026, confirmed). Am Law 100. ATS not researched."
+  - name: "McGuireWoods"
+    careers_url: "https://www.mcguirewoods.com/careers/"
     ats_type: unknown
     ats_identifier: null
     public_entry_level: unknown
-    note: "Am Law 100. Vault-ranked. ATS unverified."
-  - name: "Faegre Drinker Biddle & Reath"
-    careers_url: "https://www.faegredrinker.com/en/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Am Law 100. Vault-ranked. ATS unverified."
-  - name: "Ballard Spahr"
-    careers_url: "https://www.ballardspahr.com/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Am Law 100/200. Vault-ranked. ATS unverified."
-  - name: "Nixon Peabody"
-    careers_url: "https://www.nixonpeabody.com/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Am Law 100/200. Vault-ranked. ATS unverified."
-  - name: "Steptoe"
-    careers_url: "https://www.steptoe.com/en/careers.html"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Am Law 100/200. Vault-ranked. ATS unverified."
-  - name: "Kaye Scholer" # merged into Arnold & Porter (2017) -- listed for dedup awareness only
-    careers_url: "https://www.arnoldporter.com/en/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "FLAG: merged into Arnold & Porter in 2017; DUPLICATE of Arnold & Porter Kaye Scholer above. Kept only as a dedup marker -- remove if desired."
-  - name: "Finnegan, Henderson, Farabow, Garrett & Dunner"
-    careers_url: "https://www.finnegan.com/en/careers/overview.html"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Am Law 200 (IP). Vault IP-ranked. ATS unverified."
+    note: "Vault #70 (2026, confirmed). Am Law 100. ATS not researched."
   - name: "Kellogg, Hansen, Todd, Figel & Frederick"
     careers_url: "https://www.kellogghansen.com/careers"
     ats_type: unknown
     ats_identifier: null
     public_entry_level: unknown
-    note: "FLAG: elite DC litigation boutique, very high RPL; Vault-ranked. Am Law 200 membership uncertain (small headcount) -- verify."
-  - name: "Keker, Van Nest & Peters"
-    careers_url: "https://www.keker.com/careers"
+    note: "Vault #74 (2026, confirmed; up from 81). Litigation boutique; in Am Law rankings. ATS not researched."
+  - name: "Mintz, Levin, Cohn, Ferris, Glovsky and Popeo"
+    careers_url: "https://www.mintz.com/careers"
     ats_type: unknown
     ats_identifier: null
     public_entry_level: unknown
-    note: "FLAG: elite SF litigation boutique; Vault-ranked. Am Law 200 membership uncertain (small firm) -- verify."
-  - name: "Bracewell"
-    careers_url: "https://bracewell.com/careers/"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "Am Law 200 (energy). Vault-ranked. ATS unverified."
-  - name: "Kobre & Kim"
-    careers_url: "https://kobrekim.com/careers"
-    ats_type: unknown
-    ats_identifier: null
-    public_entry_level: unknown
-    note: "FLAG: disputes/investigations boutique; Vault-ranked. Am Law 200 membership uncertain -- verify."
+    note: "Vault #79 (2026, per Grokipedia, medium confidence). Am Law 100/200. ATS not researched."
 
-# --- Vault-100 firms EXCLUDED from the intersection (flagged, not counted above) ---
-# Freshfields, Clifford Chance, Linklaters: London-HQ Magic Circle firms. Confirmed
-#   in Vault prestige rankings but tracked in the Global 200, generally NOT in the
-#   Am Law 100/200. EXCLUDED from intersection. (A&O Shearman kept above but flagged.)
+# ---- Vault-100 firms EXCLUDED from the intersection (flagged, not counted) ----
+# Freshfields (ATS: Workday freshfields/FBD_101), Clifford Chance (ATS: unknown,
+#   jobs.cliffordchance.com), Linklaters: London-HQ Magic Circle, in the Global 200,
+#   generally NOT in the Am Law 200. Excluded. A&O Shearman kept but flagged above.
 
 coverage_summary: >
-  Environment constraint dominated this task: WebFetch and all direct HTTP egress
-  (curl/bash) were blocked by the org proxy (HTTP 403 on every host, including
-  wikipedia.org, greenhouse/lever APIs, and firm sites), leaving only WebSearch,
-  which returns titles/URLs/AI-summaries of gated pages. Both source rankings are
-  paywalled (Vault) or subscription-gated (Am Law/law.com), so neither could be
-  enumerated in full; the top ranks and a set of individually-confirmed placements
-  were recovered from search anchors. This file lists 69 firms — the high-confidence
-  intersection CORE (firms I am confident sit on BOTH the Vault 100 and the Am Law
-  200), NOT the complete ~85-95 intersection. The remaining ~15-25 Vault-100 tail
-  firms (roughly ranks 70-100) could not be enumerated reliably from snippets;
-  candidates not yet placed include Kellogg Hansen, Keker Van Nest, Kobre & Kim,
-  Nixon Peabody, Venable, Seyfarth Shaw, Duane Morris, Faegre Drinker, Ballard
-  Spahr, Bracewell, Steptoe, Finnegan. ATS classification: 0 of 69 firms are
-  verified here. ATS lookups were delegated to five sub-agents (batched ~14 firms
-  each, instructed to infer ats_type/identifier from URLs in WebSearch results and
-  never to guess tokens), but their results did not return to this context before
-  consolidation was forced, so every firm is marked ats_type: unknown /
-  ats_identifier: null rather than guessed. public_entry_level is unknown for all;
-  as general context, most BigLaw firms route first-year/entry-level hiring through
-  law-school OCI/Symplicity and post only lateral roles publicly, so a true value
-  is expected to be rare. Intersection caveats flagged inline: Magic Circle firms
-  (Freshfields, Clifford Chance, Linklaters) are on Vault but excluded as non-Am
-  Law-200; A&O Shearman is included but flagged (post-merger reporting ambiguous);
-  Kramer Levin/HSF Kramer likely fell out of the current Vault 100 after its merger.
-  To finish this properly, an environment with working WebFetch (or the sub-agent
-  ATS outputs) is required to (a) enumerate the full Vault 100 tail and (b) verify
-  each firm's ATS type and identifier.
+  73 firms listed — the high-confidence intersection CORE of Vault 100 and Am Law
+  200, NOT the full ~85-95 (both sources paywalled/gated; with WebFetch and all
+  direct HTTP egress blocked by the org proxy, only WebSearch worked, so the lists
+  could not be enumerated end-to-end). ATS was verified for 66 of the first 68 via
+  sub-agents that read the ATS host out of URLs in WebSearch results (never guessing
+  tokens). Breakdown: WORKDAY 20 (Skadden skadden/Skadden_Careers, Simpson Thacher
+  stblaw/careers, Weil weil/work_at_weil, Wilson Sonsini wsgr/WSGR, Cooley
+  cooley/Cooley_US_LLP, Dechert dechert/DechertCareers, King & Spalding kslaw/careers,
+  Fenwick fenwick/Fenwick_External_Careers, Goodwin goodwinprocter/External_Careers,
+  McDermott mwe/mwe_careers, Hogan Lovells hoganlovells/Search, Norton Rose Fulbright
+  nrf/External, Gunderson gunder/Gunderson, Perkins Coie perkinscoie/perkinscoieexternal,
+  Morgan Lewis morganlewis/morganlewis, Holland & Knight hklaw/Holland_Knight, DLA
+  Piper dlapiper/dlapiper, Alston & Bird alston/ExternalCareer, Munger Tolles
+  mto/MTO_Careers, Troutman Pepper Locke troutman/TPRecruit1 — all tenant/site copied
+  from real myworkdayjobs URLs); FLO_RECRUIT 10 (Wachtell, Mayer Brown, Vinson &
+  Elkins, Baker Botts [low], Proskauer, Akin Gump, Winston & Strawn, Sheppard Mullin,
+  Cahill, HSF Kramer); VIRECRUIT 4 (Paul Hastings, Cadwalader, Willkie — all confirmed
+  via viRecruitSelfApply URLs; Jones Day inferred from 'SelfApply'); GREENHOUSE 2
+  (Fried Frank token friedfrankharrisshriverjacobsonllp confirmed; Gibson Dunn token
+  'gibsondunn' confirmed but on a STAFF posting — attorney path may be viRecruit,
+  flagged); VIGLOBAL 1 (Orrick, inferred from hosted domain); OTHER 29 (iCIMS: Latham,
+  Milbank, Cleary, Foley, Sidley; Taleo: Paul Weiss, Katten, White & Case, +MoFo;
+  AllHires: Debevoise; Kenexa BrassRing: A&O Shearman; Avature: Baker McKenzie;
+  SilkRoad: WilmerHale; SmartRecruiters: Crowell & Moring; PeopleSoft: Reed Smith;
+  self-hosted/custom/email: Cravath, Kirkland, Sullivan & Cromwell, Davis Polk,
+  Covington, Ropes & Gray, Arnold & Porter, Quinn Emanuel, Fish & Richardson, Schulte
+  Roth, Hughes Hubbard, Boies Schiller, Williams & Connolly, Susman Godfrey). UNKNOWN 2
+  (Jenner & Block, Greenberg Traurig — branded custom portals, no ATS host exposed).
+  public_entry_level: TRUE for ~55 firms (surface summer/entry/3L programs publicly),
+  UNKNOWN for ~12 (mostly Vault top firms on Workday — Skadden, Simpson Thacher, Weil,
+  Kirkland, Milbank, Sidley, Wilson Sonsini, Cooley, Cadwalader, Quinn Emanuel — whose
+  public boards skew lateral and route first-years via OCI), FALSE for 1 (Morrison &
+  Foerster explicitly declines public first-year/clerk submissions). Intersection
+  uncertainty flags: Magic Circle (Freshfields, Clifford Chance, Linklaters) on Vault
+  but excluded as non-Am Law 200; A&O Shearman included but flagged (ambiguous
+  post-merger reporting); Kramer Levin/HSF Kramer likely fell out of the current Vault
+  100 after its merger; the ~15-25 Vault tail firms (ranks ~70-100: e.g. Kellogg
+  Hansen, Keker Van Nest, Kobre & Kim, Nixon Peabody, Venable, Seyfarth, Duane Morris,
+  Faegre Drinker, Ballard Spahr) could not be enumerated from search snippets and are
+  NOT in this list (though 5 tail firms — K&L Gates #49, Pillsbury #58, McGuireWoods
+  #70, Kellogg Hansen #74, Mintz #79 — were confirmed and added with ATS unresearched).
+  MEMBERSHIP CAVEAT: the Vault-membership agent could NOT independently confirm
+  Vault-100 placement for 10 large-revenue firms in this list — Gunderson Dettmer,
+  Foley & Lardner, Baker McKenzie, Greenberg Traurig, DLA Piper, Reed Smith, Troutman
+  Pepper Locke, Crowell & Moring, Morgan Lewis, Holland & Knight; these are solidly Am
+  Law 100/200 but their Vault prestige placement (and thus intersection membership) is
+  UNCERTAIN and should be re-verified against the full Vault list. Also note the
+  2026-2027 edition reshuffled the top 10 (Sullivan & Cromwell to #5, Kirkland #6,
+  Gibson Dunn #8, Paul Weiss down to #13).

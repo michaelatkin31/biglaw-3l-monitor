@@ -49,27 +49,39 @@ The pipeline per run:
 
 ---
 
-## ⚠️ First: classify the firms
+## Coverage: what actually gets polled
 
-This repo ships with `firms.yaml` populated with the ~80-firm intersection, but
-**every firm is `ats_type: unknown`** — the environment this was built in had no
-outbound network, so no careers page could be probed. Until firms are classified,
-the monitor fetches nothing.
+`firms.yaml` ships with **73 firms** (the best-effort Vault-100 ∩ Am-Law-200
+intersection) already **classified by ATS**. Classification was derived from URLs
+seen in web-search results (the build environment had no direct egress), so it's
+good but **not live-verified**.
 
-To populate `ats_type` / `ats_identifier` automatically, run `classify.py` from
-anywhere with open outbound HTTPS:
+Only three ATS backends have public JSON fetchers, so the monitor actively polls:
+
+- **2 Greenhouse** firms (Fried Frank, Gibson Dunn)
+- **20 Workday** firms (Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
+  Spalding, Fenwick, Goodwin, McDermott, Hogan Lovells, Norton Rose Fulbright,
+  DLA Piper, Alston & Bird, Morgan Lewis, Holland & Knight, Munger Tolles,
+  Perkins Coie, Wilson Sonsini, Gunderson, Troutman) — all with `workday_host`
+  pinned so no data-center probing is needed.
+
+The other ~51 firms use `flo_recruit` / `virecruit` / `viglobal` / iCIMS / Taleo
+/ custom portals (`other`) or are `unknown` — they're **recognized but skipped**
+because there's no public API to poll. This is the coverage ceiling: most BigLaw
+first-year hiring runs through OCI / school-gated portals, not a public feed. See
+`DECISIONS.md` §4.
+
+**Verify / refresh the classification** (optional but recommended) from any
+machine with open outbound HTTPS:
 
 ```bash
 python classify.py            # dry report: what ATS it detects per firm
 python classify.py --write    # detect AND update firms.yaml in place
 ```
 
-Or, in your fork, trigger the **`classify-firms`** GitHub Action
-(Actions → classify-firms → Run workflow) — it probes and commits `firms.yaml`
-for you. `classify.py` never guesses tokens; firms it can't fingerprint stay
-`unknown`. See `DECISIONS.md` for the full backstory and the known coverage
-ceiling (a lot of big-law entry-level hiring is school-gated OCI and never hits
-public pages).
+Or trigger the **`classify-firms`** GitHub Action in your fork (Actions →
+classify-firms → Run workflow) — it re-probes and commits `firms.yaml`.
+`classify.py` never guesses tokens; firms it can't fingerprint stay `unknown`.
 
 ---
 
@@ -81,8 +93,9 @@ pip install -r requirements.txt
 # Validate end-to-end WITHOUT sending mail or touching state:
 python main.py --dry-run
 
-# One firm, verbose (shows every fetched-but-filtered posting at DEBUG):
-python main.py --firm "Latham & Watkins" --dry-run -v
+# One firm, verbose (shows every fetched-but-filtered posting at DEBUG).
+# Use a Greenhouse/Workday firm -- others have no public fetcher and just skip:
+python main.py --firm "Cooley" --dry-run -v
 
 # Seed state on first setup so the first real run doesn't email the whole
 # current backlog:
