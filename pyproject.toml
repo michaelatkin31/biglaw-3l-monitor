@@ -1,0 +1,22 @@
+[project]
+name = "biglaw-3l-monitor"
+version = "1.0.0"
+description = "Daily email digest of new 3L / entry-level associate postings at large US law firms."
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31,<3",
+    "PyYAML>=6.0,<7",
+]
+
+[project.optional-dependencies]
+# Only needed for firms marked `render: playwright` in firms.yaml.
+render = ["playwright>=1.44"]
+dev = ["pytest>=7"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.setuptools]
+py-modules = ["main", "classify"]
+packages = ["core", "fetchers"]

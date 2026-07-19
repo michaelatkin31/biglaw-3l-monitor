@@ -1,0 +1,61 @@
+# Runtime configuration for the BigLaw 3L monitor.
+# Everything here is tunable without touching code.
+
+db_path: state.db
+
+http:
+  timeout: 20            # per-request timeout (seconds)
+  retries: 3             # retry count for connect/read/429/5xx
+  backoff_factor: 1.0    # exponential backoff base (1.0 -> 1s, 2s, 4s ...)
+  # user_agent: override if you like; a real-browser UA is the default.
+
+filters:
+  # Toggle summer-associate roles on if you want them (default: off).
+  include_summer_associate: false
+
+  # Search these Posting fields for keyword/regex matches. Title is usually
+  # enough; add "location" or others if a firm buries the class year there.
+  search_fields: [title]
+
+  # ANY of these substrings (word-boundary matched) => candidate include.
+  include_keywords:
+    - "first-year associate"
+    - "first year associate"
+    - "1st year associate"
+    - "entry-level associate"
+    - "entry level associate"
+    - "new grad"
+    - "new graduate"
+    - "3l"
+    - "entering class"
+    - "incoming associate"
+    - "junior associate"
+
+  # ANY of these regexes => candidate include. Class-year patterns: a 4-digit
+  # near-future year (2025-2039) adjacent to "associate" or "class".
+  include_regexes:
+    - '\bclass of 20(2[5-9]|3\d)\b'
+    - '\b20(2[5-9]|3\d)\s+(incoming\s+)?associate'
+    - '\bassociate[^.\n]{0,25}\b20(2[5-9]|3\d)\b'
+    - '\bentering\s+class\b'
+
+  # ANY of these => excluded, and exclude ALWAYS beats include.
+  exclude_keywords:
+    - "lateral"
+    - "partner"
+    - "counsel"          # catches "of counsel", "senior counsel"
+    - "staff"
+    - "paralegal"
+    - "secretary"
+    - "patent agent"
+    - "librarian"
+    - "law clerk"        # class-year associate roles are the target, not clerkships
+    - "internship"
+    - "intern"
+
+  # Excluded unless include_summer_associate is true.
+  summer_associate_keywords:
+    - "summer associate"
+    - "summer program"
+    - "1l summer"
+    - "2l summer"

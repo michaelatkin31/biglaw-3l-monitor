@@ -1,0 +1,8 @@
+# Core runtime deps. Kept intentionally light so the GitHub Actions run is fast.
+requests>=2.31,<3
+PyYAML>=6.0,<7
+
+# Playwright is OPTIONAL and only needed for firms marked `render: playwright`
+# in firms.yaml. Install separately if/when you enable a JS-rendered firm:
+#   pip install playwright && playwright install chromium
+# playwright>=1.44

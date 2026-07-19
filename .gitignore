@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.log
+
+# The state DB is committed back by the GitHub Action (see workflow).
+# For local dev you usually DON'T want to commit your scratch DB; uncomment
+# the next line if you keep a throwaway local DB with a different name.
+# local_state.db
