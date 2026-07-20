@@ -57,3 +57,5 @@ jobs:
           else
             echo "state.db unchanged; nothing to commit."
           fi
+
+# (registered with GitHub Actions 2026-07-20)
