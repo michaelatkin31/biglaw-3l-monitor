@@ -6,6 +6,7 @@ from fetchers.base import Firm
 from fetchers.careerpage import CareerPageFetcher
 from fetchers.greenhouse import GreenhouseFetcher
 from fetchers.lever import LeverFetcher
+from fetchers.radancy import RadancyFetcher
 from fetchers.smartrecruiters import SmartRecruitersFetcher
 from fetchers.virecruit import ViRecruitFetcher, parse_virecruit_html
 from fetchers.workday import WorkdayFetcher
@@ -237,3 +238,31 @@ def test_virecruit_blocked_page_raises():
     firm = Firm(name="F", ats_type="virecruit", ats_identifier="http://x")
     with pytest.raises(RuntimeError):
         ViRecruitFetcher(FakeClient(text_result="<html>login</html>")).fetch(firm)
+
+
+_RADANCY_HTML = """
+<ul class="jobs-list">
+  <li><a href="/en/job/new-york/associate-m-and-a/3392/111">Associate, M&amp;A</a></li>
+  <li><a href="/en/job/belfast/associate-corporate/3392/222"><span>Associate - Corporate</span></a></li>
+</ul>
+"""
+
+
+def test_radancy_fetch_and_paginate_stop():
+    client = FakeClient(text_result=_RADANCY_HTML)
+    firm = Firm(name="A&O Shearman", ats_type="radancy",
+                ats_identifier="https://careers.aoshearman.com/en/search-jobs/Associate")
+    posts = RadancyFetcher(client).fetch(firm)
+    assert len(posts) == 2  # deduped; page 2 repeats page 1 -> loop stops
+    assert posts[0].job_id == "111"
+    assert posts[0].location == "New York"
+    assert posts[0].url.endswith("/en/job/new-york/associate-m-and-a/3392/111")
+    assert posts[0].ats == "radancy"
+    # ?p=N pagination param is appended
+    assert "p=1" in client.get_calls[0][0]
+
+
+def test_radancy_requires_identifier():
+    firm = Firm(name="F", ats_type="radancy", ats_identifier=None)
+    with pytest.raises(ValueError):
+        RadancyFetcher(FakeClient(text_result="")).fetch(firm)

@@ -320,10 +320,10 @@ firms:
   # ---- Batch 4 ----
   - name: "A&O Shearman"
     careers_url: "https://careers.aoshearman.com/en/search-jobs"
-    ats_type: other
-    ats_identifier: null
+    ats_type: radancy
+    ats_identifier: "https://careers.aoshearman.com/en/search-jobs/Associate"
     public_entry_level: true
-    note: "FLAG (intersection): 2024 A&O + Shearman merger; Shearman was Am Law 100 so US arm likely in Am Law 200, post-merger reporting ambiguous. ATS = Kenexa BrassRing (jobs.aoshearman.com/tgwebhost/... PartnerId=30147/SiteId=5040); also Flo for some early careers."
+    note: "Live-verified 2026-07-20: Radancy/TalentBrew careers site is server-rendered HTML (careers.aoshearman.com/en/search-jobs/Associate, ~60 associate roles, paginated ?p=N). Board skews UK/EU/Gulf (us_only geo filter trims non-US). 2024 A&O+Shearman merger; US arm in Am Law 200."
   - name: "Norton Rose Fulbright"
     careers_url: "https://www.nortonrosefulbright.com/en-us/careers"
     ats_type: workday

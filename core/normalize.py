@@ -185,6 +185,33 @@ def normalize_virecruit_job(firm: str, job: dict, listing_url: str) -> Optional[
     )
 
 
+# --- Radancy / TalentBrew (e.g. A&O Shearman) ------------------------------
+# The search-jobs page is server-rendered HTML; each job is an anchor
+#   <a href="/en/job/{city}/{slug}/{orgid}/{jobid}">Title</a>
+# City (for the geo filter) and a stable numeric job id come straight from the href.
+
+_RADANCY_HREF = re.compile(r"/job/([^/]+)/[^/]+/\d+/(\d+)")
+
+
+def normalize_radancy_job(firm: str, href: str, title: str, origin: str) -> Optional[Posting]:
+    title = clean_text(title)
+    if not title:
+        return None
+    m = _RADANCY_HREF.search(href or "")
+    city = m.group(1).replace("-", " ").title() if m else ""
+    job_id = m.group(2) if m else clean_text(href)
+    url = origin.rstrip("/") + href if href.startswith("/") else href
+    return Posting(
+        firm=firm,
+        job_id=job_id or f"{firm}:{title}",
+        title=title,
+        location=city,
+        url=url,
+        ats="radancy",
+        posted_date=None,
+    )
+
+
 # --- Generic (schema.org JobPosting JSON-LD) -------------------------------
 
 

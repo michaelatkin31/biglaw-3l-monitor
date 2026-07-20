@@ -3,6 +3,7 @@ from core.normalize import (
     normalize_careerpage_job,
     normalize_greenhouse_job,
     normalize_lever_posting,
+    normalize_radancy_job,
     normalize_smartrecruiters_posting,
     normalize_virecruit_job,
     normalize_workday_job,
@@ -117,6 +118,21 @@ def test_virecruit_job():
 
 def test_virecruit_job_no_title_dropped():
     assert normalize_virecruit_job("F", {"office": "NY"}, "http://x") is None
+
+
+def test_radancy_job():
+    href = "/en/job/new-york/associate-m-and-a/3392/35050392832"
+    p = normalize_radancy_job("A&O Shearman", href, "Associate, M&A",
+                              "https://careers.aoshearman.com")
+    assert p.job_id == "35050392832"
+    assert p.location == "New York"  # city from href, humanized (geo filter reads this)
+    assert p.url == "https://careers.aoshearman.com" + href
+    assert p.ats == "radancy"
+
+
+def test_radancy_job_no_title_dropped():
+    href = "/en/job/london/x/3392/1"
+    assert normalize_radancy_job("F", href, "", "https://x.com") is None
 
 
 def test_workday_url_and_id():

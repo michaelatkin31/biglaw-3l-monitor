@@ -56,8 +56,8 @@ intersection) **classified by ATS**. As of 2026-07-20 the classification of ever
 firm was **live-verified** (each careers page fetched, each candidate JSON/HTML
 endpoint hit, each board's job titles inspected for real attorney roles).
 
-Seven ATS backends have working fetchers, so the monitor actively polls
-**39 firms**:
+Eight ATS backends have working fetchers, so the monitor actively polls
+**40 firms**:
 
 - **23 Workday** — Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
   Spalding, Fenwick, Goodwin, McDermott, Hogan Lovells, Norton Rose Fulbright,
@@ -75,21 +75,28 @@ Seven ATS backends have working fetchers, so the monitor actively polls
   at `mofo.career.page/api/jobs`; one of the few firms that *publicly* posts
   entry-level roles, e.g. "2026 Post-Clerkship Associate Attorney").
 - **1 SmartRecruiters** — **Crowell & Moring**.
+- **1 Radancy/TalentBrew** — **A&O Shearman** (server-rendered HTML, plain HTTP).
 
-The remaining ~36 firms have **no pollable endpoint**: `viglobal`/self-hosted
+The remaining ~35 firms have **no pollable endpoint**: `viglobal`/self-hosted
 viRecruit behind Cloudflare or broken TLS (Kirkland, Paul Hastings, Willkie),
-iCIMS / Taleo / LawCruit / Avature / Radancy, Flo Recruit (auth-gated JSON), a
-Cloudflare-gated Workday tenant (Paul Weiss), or email-only (Cravath, Davis Polk,
-Sullivan & Cromwell, Susman, Quinn Emanuel). A couple (Wachtell, Proskauer) expose
-a public API but it's a **staff-only board** with zero attorneys, so polling it
-would be noise. See `DECISIONS.md` §4.
+iCIMS / Taleo / LawCruit / Avature, a Cloudflare-gated Workday tenant (Paul
+Weiss), or email-only (Cravath, Davis Polk, Sullivan & Cromwell, Susman, Quinn
+Emanuel). A couple (Wachtell, Proskauer) expose a public API but it's a
+**staff-only board** with zero attorneys, so polling it would be noise. See
+`DECISIONS.md` §4.
 
-> **Reality for a job-seeker:** even among the 39 polled firms, live data shows the
+Two ATSs were investigated with a headless browser and rejected: **Flo Recruit**
+(the job board is disabled for 5/7 of our firms — they use it only for OCI event
+forwarding — and the 2 with it enabled were empty) and **iCIMS attorney boards**
+(login-gated, e.g. `lw.icims.com` → `login.icims.com`; only the *staff* iCIMS is
+public). Headless rendering works fine; the blockers are auth and absent data, so
+a browser doesn't help. (A&O Shearman's Radancy site, by contrast, is public
+server-rendered HTML — hence pollable with plain HTTP.)
+
+> **Reality for a job-seeker:** even among the 40 polled firms, live data shows the
 > public boards are overwhelmingly *lateral* (experienced) associate roles.
 > Genuine entry-level postings ("first-year", "class of 202X", "post-clerkship")
-> are rare on public boards, because most entry-level BigLaw hiring runs through
-> OCI / 2L-summer programs / judicial clerkships — recruiting *processes*, not
-> postings, that no monitor can see. The filter is tuned **recall-first** (see
+> are rare on public boards. The filter is tuned **recall-first** (see
 > "Tuning the filter") so the rare real one is never missed, at the cost of some
 > lateral roles in the digest. Treat this tool as *one* strong signal, not a
 > substitute for OSCAR (clerkships), NALP, and direct firm-by-firm checks.
