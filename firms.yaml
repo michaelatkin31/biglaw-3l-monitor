@@ -212,6 +212,18 @@ firms:
     ats_identifier: null
     public_entry_level: unknown
     note: "No online ATS; email submission to per-office recruiting contacts. US offices accepting associate applications."
+  - name: "O'Melveny & Myers"
+    careers_url: "https://www.omm.com/careers/"
+    ats_type: virecruit
+    ats_identifier: null
+    public_entry_level: true
+    note: "Vault-100 + Am Law 100; LA-founded, a major USC Law employer. Added 2026-07-20 (was missing from the registry). Attorney apply path is viGlobal/viRecruit self-apply (ommcareers.viglobalcloud.com/viRecruitSelfApply) -- ASP.NET, auth-gated, NOT pollable. A 'omm' Workday tenant exists but returns 401 (auth-gated). Recognized-but-skipped like the other viRecruit firms."
+  - name: "Irell & Manella"
+    careers_url: "https://www.irell.com/careers"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: true
+    note: "Elite LA litigation firm (Am Law 200; Vault-ranked litigation); relevant to USC. Added 2026-07-20. Lateral + judicial-clerk hiring via careers page; applications appear email/custom-form based (no third-party ATS host surfaced) -- treat as not pollable pending a live endpoint. Verify if adding a fetcher."
   - name: "Jones Day"
     careers_url: "https://www.jonesday.com/en/careers/positions/experienced-lawyers"
     ats_type: virecruit
