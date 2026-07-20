@@ -7,6 +7,7 @@ owns the field mapping.
 
 from __future__ import annotations
 
+import hashlib
 import html
 import re
 from datetime import datetime, timezone
@@ -155,6 +156,32 @@ def normalize_smartrecruiters_posting(firm: str, posting: dict, company: str) ->
         url=url,
         ats="smartrecruiters",
         posted_date=clean_text(posting.get("releasedDate")) or None,
+    )
+
+
+# --- viRecruit / viGlobal (vi by Aderant) ----------------------------------
+# The public "self-apply" listing page (viRecruitSelfApply/RecDefault.aspx) is a
+# server-rendered ASP.NET GridView. There is no per-job numeric id and no
+# per-job URL (Apply is a __doPostBack), so we synthesize a stable id from the
+# firm + title + office + posted date and link to the listing page itself.
+
+
+def normalize_virecruit_job(firm: str, job: dict, listing_url: str) -> Optional[Posting]:
+    title = clean_text(job.get("title"))
+    if not title:
+        return None
+    office = clean_text(job.get("office"))
+    posted = clean_text(job.get("posted")) or None
+    raw = f"{firm}|{title}|{office}|{posted}".lower()
+    job_id = "vr-" + hashlib.md5(raw.encode("utf-8")).hexdigest()[:16]
+    return Posting(
+        firm=firm,
+        job_id=job_id,
+        title=title,
+        location=office,
+        url=listing_url,
+        ats="virecruit",
+        posted_date=posted,
     )
 
 

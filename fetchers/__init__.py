@@ -19,6 +19,7 @@ from .generic import GenericFetcher
 from .greenhouse import GreenhouseFetcher
 from .lever import LeverFetcher
 from .smartrecruiters import SmartRecruitersFetcher
+from .virecruit import ViRecruitFetcher
 from .workday import WorkdayFetcher
 
 
@@ -30,6 +31,7 @@ def build_registry(client: HttpClient) -> dict[str, Fetcher]:
         "generic": GenericFetcher(client),
         "careerpage": CareerPageFetcher(client),
         "smartrecruiters": SmartRecruitersFetcher(client),
+        "virecruit": ViRecruitFetcher(client),
     }
 
 
@@ -45,6 +47,7 @@ __all__ = [
     "GenericFetcher",
     "CareerPageFetcher",
     "SmartRecruitersFetcher",
+    "ViRecruitFetcher",
     "build_registry",
     "get_fetcher",
 ]

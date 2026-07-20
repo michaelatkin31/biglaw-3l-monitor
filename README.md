@@ -51,44 +51,48 @@ The pipeline per run:
 
 ## Coverage: what actually gets polled
 
-`firms.yaml` ships with **73 firms** (the best-effort Vault-100 ∩ Am-Law-200
+`firms.yaml` ships with **75 firms** (the best-effort Vault-100 ∩ Am-Law-200
 intersection) **classified by ATS**. As of 2026-07-20 the classification of every
-firm was **live-verified** (each careers page fetched, each candidate JSON
+firm was **live-verified** (each careers page fetched, each candidate JSON/HTML
 endpoint hit, each board's job titles inspected for real attorney roles).
 
-Six ATS backends have public JSON fetchers, so the monitor actively polls
-**27 firms**:
+Seven ATS backends have working fetchers, so the monitor actively polls
+**39 firms**:
 
 - **23 Workday** — Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
   Spalding, Fenwick, Goodwin, McDermott, Hogan Lovells, Norton Rose Fulbright,
   DLA Piper, Alston & Bird, Morgan Lewis, Holland & Knight, Munger Tolles,
   Perkins Coie, Wilson Sonsini, Gunderson, Troutman, **Greenberg Traurig**,
-  **Pillsbury**, **HSF Kramer** — all with `workday_host` pinned. (Paul Weiss's
-  Workday tenant is real but Cloudflare bot-gated even from CI, so it stays
-  `other`.)
-- **2 Greenhouse** — Fried Frank, **Hughes Hubbard** (both genuine attorney
-  boards). *(Gibson Dunn's `gibsondunn` board and Fried Frank were checked for the
-  staff-board trap; Gibson Dunn was staff-only and moved to `other`.)*
+  **Pillsbury**, **HSF Kramer** — all with `workday_host` pinned.
+- **12 viRecruit** (`vi by Aderant`) — **Cleary, Jones Day, O'Melveny, Milbank,
+  Boies Schiller, Akin Gump, Baker Botts, Jenner & Block, Foley, Fish &
+  Richardson, Mintz, Cadwalader**. vi's *Apply* step is login-gated, but the
+  **listing page is public HTML** (`viRecruitSelfApply/RecDefault.aspx`), which the
+  `virecruit` fetcher parses. This is how much of the top tier is reached.
+- **2 Greenhouse** — Fried Frank, **Hughes Hubbard** (genuine attorney boards).
+  *(Gibson Dunn's `gibsondunn` board was the staff-board trap and moved to `other`.)*
 - **1 career.page** — **Morrison & Foerster** (iCIMS-backed but exposes clean JSON
   at `mofo.career.page/api/jobs`; one of the few firms that *publicly* posts
-  entry-level roles, e.g. "Post-Clerkship Associate Attorney").
+  entry-level roles, e.g. "2026 Post-Clerkship Associate Attorney").
 - **1 SmartRecruiters** — **Crowell & Moring**.
 
-The other **45 firms** are hard-gated — `virecruit` / `viglobal` (ASP.NET
-self-apply), iCIMS / Taleo / LawCruit / Avature / Radancy, Flo Recruit (auth-gated
-JSON), or email-only — with **no pollable public endpoint**. A few (Wachtell,
-Proskauer) *do* have a public API but it's a **staff-only board** with zero
-attorneys, so polling it would be noise. This is the coverage ceiling: most BigLaw
-entry-level hiring runs through OCI / 2L-summer programs / school-gated portals,
-not a public feed. See `DECISIONS.md` §4.
+The remaining ~36 firms have **no pollable endpoint**: `viglobal`/self-hosted
+viRecruit behind Cloudflare or broken TLS (Kirkland, Paul Hastings, Willkie),
+iCIMS / Taleo / LawCruit / Avature / Radancy, Flo Recruit (auth-gated JSON), a
+Cloudflare-gated Workday tenant (Paul Weiss), or email-only (Cravath, Davis Polk,
+Sullivan & Cromwell, Susman, Quinn Emanuel). A couple (Wachtell, Proskauer) expose
+a public API but it's a **staff-only board** with zero attorneys, so polling it
+would be noise. See `DECISIONS.md` §4.
 
-> **Reality for a job-seeker:** even among the 28 polled firms, live data shows
-> the public boards are overwhelmingly *lateral* (experienced) associate roles.
+> **Reality for a job-seeker:** even among the 39 polled firms, live data shows the
+> public boards are overwhelmingly *lateral* (experienced) associate roles.
 > Genuine entry-level postings ("first-year", "class of 202X", "post-clerkship")
-> are rare on public boards. The filter is therefore tuned **recall-first** (see
-> "Tuning the filter") so the rare real one is never missed — at the cost of some
-> lateral roles in the digest. Treat this tool as *one* signal, not a substitute
-> for OSCAR (clerkships), NALP, and direct firm-by-firm checks.
+> are rare on public boards, because most entry-level BigLaw hiring runs through
+> OCI / 2L-summer programs / judicial clerkships — recruiting *processes*, not
+> postings, that no monitor can see. The filter is tuned **recall-first** (see
+> "Tuning the filter") so the rare real one is never missed, at the cost of some
+> lateral roles in the digest. Treat this tool as *one* strong signal, not a
+> substitute for OSCAR (clerkships), NALP, and direct firm-by-firm checks.
 
 **Verify / refresh the classification** (optional but recommended) from any
 machine with open outbound HTTPS:

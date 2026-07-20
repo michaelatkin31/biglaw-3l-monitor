@@ -7,13 +7,15 @@ from fetchers.careerpage import CareerPageFetcher
 from fetchers.greenhouse import GreenhouseFetcher
 from fetchers.lever import LeverFetcher
 from fetchers.smartrecruiters import SmartRecruitersFetcher
+from fetchers.virecruit import ViRecruitFetcher, parse_virecruit_html
 from fetchers.workday import WorkdayFetcher
 
 
 class FakeClient:
-    def __init__(self, json_result=None, post_results=None):
+    def __init__(self, json_result=None, post_results=None, text_result=None):
         self._json = json_result
         self._post_results = list(post_results or [])
+        self._text = text_result
         self.get_calls = []
         self.post_calls = []
 
@@ -24,6 +26,35 @@ class FakeClient:
     def post_json(self, url, body, **kw):
         self.post_calls.append((url, body))
         return self._post_results.pop(0)
+
+    def get_text(self, url, **kw):
+        self.get_calls.append((url, kw))
+        return self._text
+
+
+_VIRECRUIT_HTML = """
+<html><body>
+<table id="ctl00_contentPlaceHolder_gridviewList">
+  <tr class="even-row"><td>
+    <h4>Corporate Associate</h4>
+    <section class="sub-title">
+      <h5>Office <span>Silicon Valley</span></h5>
+      <h5>Practice Area <span>Mergers &amp; Acquisitions</span></h5>
+      <h5>Date Posted <span>Jun 02, 2026</span></h5>
+      <h5>Application Deadline <span>Jun 02, 2027</span></h5>
+    </section>
+  </td></tr>
+  <tr class="odd-row"><td>
+    <h4>Dallas Office - Litigation Associate</h4>
+    <section class="sub-title">
+      <h5>Office <span>Dallas</span></h5>
+      <h5>Practice Area <span>Litigation</span></h5>
+      <h5>Date Posted <span>May 11, 2026</span></h5>
+    </section>
+  </td></tr>
+</table>
+</body></html>
+"""
 
 
 def test_greenhouse_fetch():
@@ -163,3 +194,46 @@ def test_smartrecruiters_requires_identifier():
     firm = Firm(name="F", ats_type="smartrecruiters", ats_identifier=None)
     with pytest.raises(ValueError):
         SmartRecruitersFetcher(FakeClient({})).fetch(firm)
+
+
+def test_virecruit_parse_html():
+    jobs = parse_virecruit_html(_VIRECRUIT_HTML)
+    assert len(jobs) == 2
+    assert jobs[0] == {
+        "title": "Corporate Associate",
+        "office": "Silicon Valley",
+        "practice": "Mergers & Acquisitions",
+        "posted": "Jun 02, 2026",
+    }
+    # Title with an office prefix still parses via <h4>, office via <span>.
+    assert jobs[1]["title"] == "Dallas Office - Litigation Associate"
+    assert jobs[1]["office"] == "Dallas"
+
+
+def test_virecruit_fetch():
+    url = "https://ommcareers.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    client = FakeClient(text_result=_VIRECRUIT_HTML)
+    firm = Firm(name="O'Melveny", ats_type="virecruit", ats_identifier=url)
+    posts = ViRecruitFetcher(client).fetch(firm)
+    assert len(posts) == 2
+    assert posts[0].title == "Corporate Associate"
+    assert posts[0].location == "Silicon Valley"
+    assert posts[0].url == url
+    assert posts[0].ats == "virecruit"
+    assert posts[0].job_id.startswith("vr-")
+    # id is stable and deterministic across runs
+    assert ViRecruitFetcher(FakeClient(text_result=_VIRECRUIT_HTML)).fetch(firm)[0].job_id == posts[0].job_id
+
+
+def test_virecruit_requires_identifier():
+    firm = Firm(name="F", ats_type="virecruit", ats_identifier=None)
+    with pytest.raises(ValueError):
+        ViRecruitFetcher(FakeClient(text_result="")).fetch(firm)
+
+
+def test_virecruit_blocked_page_raises():
+    # A blocked/login page has no gridviewList table -> surfaced as a failure,
+    # not silently treated as "zero jobs".
+    firm = Firm(name="F", ats_type="virecruit", ats_identifier="http://x")
+    with pytest.raises(RuntimeError):
+        ViRecruitFetcher(FakeClient(text_result="<html>login</html>")).fetch(firm)

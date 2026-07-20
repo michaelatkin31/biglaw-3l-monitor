@@ -4,6 +4,7 @@ from core.normalize import (
     normalize_greenhouse_job,
     normalize_lever_posting,
     normalize_smartrecruiters_posting,
+    normalize_virecruit_job,
     normalize_workday_job,
 )
 
@@ -94,6 +95,28 @@ def test_smartrecruiters_posting():
     assert p.url == "https://jobs.smartrecruiters.com/CrowellMoring/744000138709871"
     assert p.ats == "smartrecruiters"
     assert p.posted_date == "2026-07-20T18:23:13.590Z"
+
+
+def test_virecruit_job():
+    listing = "https://ommcareers.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    job = {"title": "Corporate Associate", "office": "Silicon Valley",
+           "practice": "M&A", "posted": "Jun 02, 2026"}
+    p = normalize_virecruit_job("O'Melveny", job, listing)
+    assert p.title == "Corporate Associate"
+    assert p.location == "Silicon Valley"
+    assert p.url == listing
+    assert p.ats == "virecruit"
+    assert p.posted_date == "Jun 02, 2026"
+    assert p.job_id.startswith("vr-")
+    # deterministic id from firm+title+office+posted
+    assert normalize_virecruit_job("O'Melveny", dict(job), listing).job_id == p.job_id
+    # a different office => a different id (distinct multi-office rows)
+    job2 = dict(job, office="New York")
+    assert normalize_virecruit_job("O'Melveny", job2, listing).job_id != p.job_id
+
+
+def test_virecruit_job_no_title_dropped():
+    assert normalize_virecruit_job("F", {"office": "NY"}, "http://x") is None
 
 
 def test_workday_url_and_id():
