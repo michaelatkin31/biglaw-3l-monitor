@@ -88,11 +88,10 @@ firms:
     note: "Vault #7. Attorney apps email-based; business roles on custom careers.davispolk.com. 'Law Students & Trainees' page present."
   - name: "Paul, Weiss, Rifkind, Wharton & Garrison"
     careers_url: "https://www.paulweiss.com/careers"
-    ats_type: workday
-    ats_identifier: "weis/Careers"
-    workday_host: weis.wd1.myworkdayjobs.com
+    ats_type: other
+    ats_identifier: null
     public_entry_level: true
-    note: "Vault #8. TENTATIVE (2026-07-20): real workday tenant is weis.wd1/Careers, but the CXS endpoint is Cloudflare bot-gated (uniform 422/406/500 from this probe IP) -- may succeed from the GitHub Actions runner IP, may not. If it keeps failing in the run log, revert to ats_type: other. Per-firm failure never aborts the run."
+    note: "Vault #8. Real workday tenant is weis.wd1.myworkdayjobs.com/Careers, BUT the CXS endpoint is Cloudflare bot-gated -- confirmed 422 from both a local probe IP and the GitHub Actions runner IP (2026-07-20). Not pollable in practice; kept as 'other'. Revisit 'weis/Careers' if Paul Weiss ever drops the bot gate."
   - name: "Milbank"
     careers_url: "https://www.milbank.com/en/careers/index.html"
     ats_type: other

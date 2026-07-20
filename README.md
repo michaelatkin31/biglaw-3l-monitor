@@ -57,14 +57,15 @@ firm was **live-verified** (each careers page fetched, each candidate JSON
 endpoint hit, each board's job titles inspected for real attorney roles).
 
 Six ATS backends have public JSON fetchers, so the monitor actively polls
-**28 firms**:
+**27 firms**:
 
-- **24 Workday** — Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
+- **23 Workday** — Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
   Spalding, Fenwick, Goodwin, McDermott, Hogan Lovells, Norton Rose Fulbright,
   DLA Piper, Alston & Bird, Morgan Lewis, Holland & Knight, Munger Tolles,
   Perkins Coie, Wilson Sonsini, Gunderson, Troutman, **Greenberg Traurig**,
-  **Pillsbury**, **HSF Kramer**, **Paul Weiss** (last is Cloudflare-gated and may
-  fail from some IPs) — all with `workday_host` pinned.
+  **Pillsbury**, **HSF Kramer** — all with `workday_host` pinned. (Paul Weiss's
+  Workday tenant is real but Cloudflare bot-gated even from CI, so it stays
+  `other`.)
 - **2 Greenhouse** — Fried Frank, **Hughes Hubbard** (both genuine attorney
   boards). *(Gibson Dunn's `gibsondunn` board and Fried Frank were checked for the
   staff-board trap; Gibson Dunn was staff-only and moved to `other`.)*
