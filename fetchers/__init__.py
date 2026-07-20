@@ -13,6 +13,7 @@ from typing import Optional
 
 from core.http import HttpClient
 
+from .ashby import AshbyFetcher
 from .base import Fetcher
 from .careerpage import CareerPageFetcher
 from .generic import GenericFetcher
@@ -34,6 +35,7 @@ def build_registry(client: HttpClient) -> dict[str, Fetcher]:
         "smartrecruiters": SmartRecruitersFetcher(client),
         "virecruit": ViRecruitFetcher(client),
         "radancy": RadancyFetcher(client),
+        "ashby": AshbyFetcher(client),
     }
 
 
@@ -51,6 +53,7 @@ __all__ = [
     "SmartRecruitersFetcher",
     "ViRecruitFetcher",
     "RadancyFetcher",
+    "AshbyFetcher",
     "build_registry",
     "get_fetcher",
 ]

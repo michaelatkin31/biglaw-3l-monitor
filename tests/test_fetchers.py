@@ -2,6 +2,7 @@
 
 import pytest
 
+from fetchers.ashby import AshbyFetcher
 from fetchers.base import Firm
 from fetchers.careerpage import CareerPageFetcher
 from fetchers.greenhouse import GreenhouseFetcher
@@ -266,3 +267,40 @@ def test_radancy_requires_identifier():
     firm = Firm(name="F", ats_type="radancy", ats_identifier=None)
     with pytest.raises(ValueError):
         RadancyFetcher(FakeClient(text_result="")).fetch(firm)
+
+
+def test_ashby_fetch_skips_unlisted():
+    payload = {"jobs": [
+        {"id": "a1", "title": "Healthcare Associate", "location": "Columbus",
+         "jobUrl": "https://jobs.ashbyhq.com/barnes/a1", "isListed": True,
+         "address": {"postalAddress": {"addressRegion": "OH"}}},
+        {"id": "a2", "title": "Hidden Role", "location": "NY", "isListed": False},
+    ]}
+    client = FakeClient(json_result=payload)
+    firm = Firm(name="Barnes", ats_type="ashby", ats_identifier="barnes")
+    posts = AshbyFetcher(client).fetch(firm)
+    assert len(posts) == 1  # unlisted dropped
+    assert posts[0].job_id == "a1"
+    assert posts[0].location == "Columbus, OH"
+    assert posts[0].ats == "ashby"
+    assert "job-board/barnes" in client.get_calls[0][0]
+
+
+def test_ashby_requires_identifier():
+    firm = Firm(name="F", ats_type="ashby", ats_identifier=None)
+    with pytest.raises(ValueError):
+        AshbyFetcher(FakeClient({})).fetch(firm)
+
+
+def test_careerpage_accepts_full_url():
+    # Jibe self-hosted front-end (e.g. Ogletree) passes a full /api/jobs URL.
+    payload = {"totalCount": 1, "jobs": [
+        {"data": {"title": "2027 2L Summer Associate", "req_id": "6728",
+                  "apply_url": "https://x.icims.com/jobs/6728/login",
+                  "full_location": "Seattle, Washington"}}]}
+    client = FakeClient(json_result=payload)
+    firm = Firm(name="Ogletree", ats_type="careerpage",
+                ats_identifier="https://careers.ogletree.com/api/jobs")
+    posts = CareerPageFetcher(client).fetch(firm)
+    assert len(posts) == 1
+    assert client.get_calls[0][0] == "https://careers.ogletree.com/api/jobs"

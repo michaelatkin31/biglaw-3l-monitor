@@ -30,9 +30,13 @@ class CareerPageFetcher(Fetcher):
         ident = firm.ats_identifier
         if not ident:
             raise ValueError(
-                f"{firm.name}: careerpage requires ats_identifier (the *.career.page subdomain)"
+                f"{firm.name}: careerpage requires ats_identifier (a *.career.page "
+                f"subdomain OR a full Jibe /api/jobs URL)"
             )
-        base = f"https://{ident}.career.page/api/jobs"
+        # A bare token means the hosted {sub}.career.page host; a full URL (e.g.
+        # a self-hosted Jibe front-end like careers.ogletree.com/api/jobs) is used
+        # as-is. Both share the same {jobs:[{data}], totalCount} response shape.
+        base = ident if ident.startswith("http") else f"https://{ident}.career.page/api/jobs"
         postings: list[Posting] = []
         offset = 0
         total = None

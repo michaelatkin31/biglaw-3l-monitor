@@ -131,6 +131,33 @@ def normalize_careerpage_job(firm: str, job: dict) -> Optional[Posting]:
     )
 
 
+# --- Ashby -----------------------------------------------------------------
+# API: https://api.ashbyhq.com/posting-api/job-board/{org}
+# jobs: [{id, title, location, jobUrl, applyUrl, publishedAt, isListed, address}]
+
+
+def normalize_ashby_job(firm: str, job: dict) -> Optional[Posting]:
+    if job.get("isListed") is False:
+        return None
+    title = clean_text(job.get("title"))
+    if not title:
+        return None
+    location = clean_text(job.get("location"))
+    addr = (job.get("address") or {}).get("postalAddress") or {}
+    region = clean_text(addr.get("addressRegion"))
+    if region and region.lower() not in location.lower():
+        location = f"{location}, {region}" if location else region
+    return Posting(
+        firm=firm,
+        job_id=clean_text(job.get("id")) or clean_text(job.get("jobUrl")),
+        title=title,
+        location=location,
+        url=clean_text(job.get("jobUrl") or job.get("applyUrl")),
+        ats="ashby",
+        posted_date=clean_text(job.get("publishedAt")) or None,
+    )
+
+
 # --- SmartRecruiters -------------------------------------------------------
 # API: https://api.smartrecruiters.com/v1/companies/{company}/postings
 # Each posting: {id, name, refNumber, releasedDate, location:{city, region,
