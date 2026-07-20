@@ -107,10 +107,10 @@ firms:
     note: "Vault #10. Confirmed stblaw.wd1.myworkdayjobs.com/careers. Entry vs OCI unconfirmed."
   - name: "Gibson, Dunn & Crutcher"
     careers_url: "https://www.gibsondunn.com/careers/"
-    ats_type: greenhouse
+    ats_type: other
     ats_identifier: "gibsondunn"
     public_entry_level: unknown
-    note: "FLAG: Greenhouse token 'gibsondunn' confirmed (job-boards.greenhouse.io/gibsondunn) but that posting was STAFF; attorney apply path may be viRecruit/custom CMS. Token reported because actually seen."
+    note: "Greenhouse token 'gibsondunn' is a STAFF-only board (live-verified 2026-07-20: 89 jobs, 0 entry-level associate roles; 'attorney' titles are all staff/non-billable). Attorney apply path is viRecruit/custom, not this board. Reclassified greenhouse->other so it isn't falsely counted as covered. ats_identifier retained for reference."
   - name: "Cleary Gottlieb Steen & Hamilton"
     careers_url: "https://www.clearygottlieb.com/careers"
     ats_type: other
@@ -185,7 +185,7 @@ firms:
     ats_type: greenhouse
     ats_identifier: "friedfrankharrisshriverjacobsonllp"
     public_entry_level: true
-    note: "Greenhouse confirmed: job-boards.greenhouse.io/embed/job_board?for=friedfrankharrisshriverjacobsonllp. Summer Associate Program surfaced."
+    note: "Greenhouse confirmed: job-boards.greenhouse.io/embed/job_board?for=friedfrankharrisshriverjacobsonllp. Summer Associate Program surfaced at classification. Live-checked 2026-07-20: 19 jobs, currently all staff/BD (Summer Associate posting seasonally closed) -- board reachable and is the genuine recruiting board, kept as greenhouse."
   - name: "Willkie Farr & Gallagher"
     careers_url: "https://www.willkie.com/careers/legal-professional/experienced-lawyers/discover-more-and-apply/united-states"
     ats_type: virecruit
@@ -196,9 +196,9 @@ firms:
     careers_url: "https://careers.wsgr.com/openings/"
     ats_type: workday
     ats_identifier: "wsgr/WSGR"
-    workday_host: wsgr.wd1.myworkdayjobs.com
+    workday_host: wsgr.wd503.myworkdayjobs.com
     public_entry_level: unknown
-    note: "Confirmed wsgr.wd1.myworkdayjobs.com/WSGR (careers.wsgr.com is the front-end)."
+    note: "Confirmed wsgr.wd503.myworkdayjobs.com/WSGR (careers.wsgr.com is the front-end). Host was wd1 (422); live-verified wd503 2026-07-20."
   - name: "Cooley"
     careers_url: "https://www.cooley.com/careers/lawyers"
     ats_type: workday
@@ -355,9 +355,9 @@ firms:
     careers_url: "https://www.perkinscoie.com/careers"
     ats_type: workday
     ats_identifier: "perkinscoie/perkinscoieexternal"
-    workday_host: perkinscoie.wd1.myworkdayjobs.com
+    workday_host: perkinscoie.wd115.myworkdayjobs.com
     public_entry_level: true
-    note: "Confirmed perkinscoie.wd1.myworkdayjobs.com/perkinscoieexternal."
+    note: "Confirmed perkinscoie.wd115.myworkdayjobs.com/perkinscoieexternal. Host was wd1 (422); live-verified wd115 2026-07-20."
   - name: "Baker McKenzie"
     careers_url: "https://careers.bakermckenzie.com/en_US/opportunities/SearchJobs"
     ats_type: other
@@ -447,9 +447,9 @@ firms:
     careers_url: "https://www.mto.com/careers/"
     ats_type: workday
     ats_identifier: "mto/MTO_Careers"
-    workday_host: mto.wd1.myworkdayjobs.com
+    workday_host: mto.wd503.myworkdayjobs.com
     public_entry_level: true
-    note: "Confirmed mto.wd1.myworkdayjobs.com/MTO_Careers. Vault 100 + Am Law A-List #1 (2025)."
+    note: "Confirmed mto.wd503.myworkdayjobs.com/MTO_Careers. Host was wd1 (422); live-verified wd503 2026-07-20. Vault 100 + Am Law A-List #1 (2025)."
   - name: "Williams & Connolly"
     careers_url: "https://www.wc.com/Careers"
     ats_type: other

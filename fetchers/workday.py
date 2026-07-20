@@ -26,8 +26,10 @@ from .base import Fetcher, Firm
 
 log = logging.getLogger(__name__)
 
-# Probed in order only when workday_host is not pinned. Kept short deliberately.
-_DC_CANDIDATES = ["wd1", "wd3", "wd5", "wd12", "wd101", "wd103"]
+# Probed in order only when workday_host is not pinned. Kept short deliberately
+# but covers the data centers actually seen on BigLaw tenants (wd503 and wd115
+# are both live in firms.yaml -- a shorter list silently 422s those firms).
+_DC_CANDIDATES = ["wd1", "wd3", "wd5", "wd12", "wd101", "wd103", "wd105", "wd115", "wd503"]
 _PAGE_SIZE = 20
 _MAX_JOBS = 1000  # safety cap so a huge board can't loop forever
 

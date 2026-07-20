@@ -58,7 +58,9 @@ good but **not live-verified**.
 
 Only three ATS backends have public JSON fetchers, so the monitor actively polls:
 
-- **2 Greenhouse** firms (Fried Frank, Gibson Dunn)
+- **1 Greenhouse** firm (Fried Frank). *(Gibson Dunn's `gibsondunn` board was
+  live-verified to be staff-only — no attorney/associate pipeline — and moved to
+  `other`; its real attorney apply path is a custom/viRecruit portal.)*
 - **20 Workday** firms (Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
   Spalding, Fenwick, Goodwin, McDermott, Hogan Lovells, Norton Rose Fulbright,
   DLA Piper, Alston & Bird, Morgan Lewis, Holland & Knight, Munger Tolles,
