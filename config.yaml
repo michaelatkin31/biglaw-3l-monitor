@@ -10,18 +10,44 @@ http:
   # user_agent: override if you like; a real-browser UA is the default.
 
 filters:
-  # Toggle summer-associate roles on if you want them (default: off).
+  # ---------------------------------------------------------------------------
+  # RECALL-FIRST design (this tool is a PRIMARY job-search net for a US 3L).
+  #
+  # Reality check from live data: BigLaw public ATS boards almost never title a
+  # posting "first-year associate" -- entry-level hiring runs through OCI /
+  # summer programs, and the public boards are dominated by *lateral* associate
+  # roles named only by practice area ("Real Estate Associate (New York)"). A
+  # precision filter keyed on "first-year"/"entry-level" therefore matches ~0
+  # real postings. So instead we cast a wide net -- ANY US associate/attorney/
+  # lawyer role -- and merely subtract the roles a graduating 3L plainly cannot
+  # take (senior/mid-level/of-counsel/partner) and all non-fee-earner staff.
+  # Better to skim a few lateral roles than silently miss the rare entry role.
+  #
+  # Want fewer, higher-precision hits instead? See "PRECISION MODE" note below.
+  # ---------------------------------------------------------------------------
+
+  # Toggle summer-associate roles on if you want them (default: off -- a
+  # class-of-2026 grad's summer window has passed; summer postings are now for
+  # rising 2Ls). Flip true if the search should include 2L summer programs.
   include_summer_associate: false
 
-  # Search these Posting fields for keyword/regex matches. Title is usually
-  # enough; add "location" or others if a firm buries the class year there.
+  # Drop postings whose location is clearly outside the US (see markers below).
+  # BigLaw boards carry a big tail of London/Frankfurt/Paris/Singapore trainee &
+  # NQ roles; a US 3L wants none of them. Recall-safe: only drops when a foreign
+  # place is named AND no US place is -- ambiguous ("3 Locations") is kept.
+  us_only: true
+
+  # Search these Posting fields for keyword/regex matches.
   search_fields: [title]
 
-  # ANY of these substrings (word-boundary matched) => candidate include.
+  # ANY of these (word-boundary matched) => candidate include. The three bare
+  # fee-earner words are the wide net; the rest are explicit entry signals kept
+  # so they still match even if the exclude list is later tightened.
   include_keywords:
+    - "associate"
+    - "attorney"
+    - "lawyer"
     - "first-year associate"
-    - "first year associate"
-    - "1st year associate"
     - "entry-level associate"
     - "entry level associate"
     - "new grad"
@@ -30,28 +56,84 @@ filters:
     - "entering class"
     - "incoming associate"
     - "junior associate"
+    - "judicial clerk"
+    - "clerkship"
 
-  # ANY of these regexes => candidate include. Class-year patterns: a 4-digit
-  # near-future year (2025-2039) adjacent to "associate" or "class".
+  # ANY of these regexes => candidate include (class-year / junior phrasings the
+  # bare keywords might miss in unusual word order).
   include_regexes:
     - '\bclass of 20(2[5-9]|3\d)\b'
+    - '\bclass years?\s+20(2[5-9]|3\d)\b'    # e.g. "Class Years 2026-2025"
     - '\b20(2[5-9]|3\d)\s+(incoming\s+)?associate'
     - '\bassociate[^.\n]{0,25}\b20(2[5-9]|3\d)\b'
     - '\bentering\s+class\b'
+    - '\bjunior[- ]?level\b'
 
-  # ANY of these => excluded, and exclude ALWAYS beats include.
+  # ANY of these => excluded, and exclude ALWAYS beats include. Two groups:
+  #  (a) seniority a graduating 3L cannot fill; (b) non-attorney staff titles
+  #  (they'd otherwise slip in via the bare "attorney"/"associate" includes).
   exclude_keywords:
+    # (a) seniority
     - "lateral"
     - "partner"
-    - "counsel"          # catches "of counsel", "senior counsel"
-    - "staff"
+    - "of counsel"
+    - "counsel"           # also "senior counsel", "general counsel"
+    - "senior"
+    - "mid-level"
+    - "midlevel"
+    - "mid level"
+    - "experienced"
+    - "managing"
+    # (b) non-fee-earner staff (attorney-titled support roles included)
+    - "staff attorney"
+    - "conflicts"
+    - "docket"
+    - "practice support"
+    - "knowledge"
+    - "professional development"
+    - "business development"
+    - "recruiting"
+    - "recruiter"
+    - "recruitment"
     - "paralegal"
     - "secretary"
     - "patent agent"
     - "librarian"
-    - "law clerk"        # class-year associate roles are the target, not clerkships
+    - "law clerk"         # staff/library clerk, not a judicial clerkship
+    - "coordinator"
+    - "manager"
+    - "director"
+    - "administrator"
+    - "assistant"
+    - "analyst"
+    - "specialist"
+    - "officer"
+    - "engineer"
+    - "developer"
+    - "technician"
+    - "accountant"
+    - "bookkeeper"
+    - "marketing"
     - "internship"
     - "intern"
+    # (c) foreign-language / foreign-qualification roles that slip the geo gate
+    #     when the location is ambiguous ("2 Locations"). Clean, unambiguous
+    #     signals for German / French / Italian / UK-Commonwealth postings.
+    - "m/w/d"
+    - "w/m/d"
+    - "rechtsanwalt"
+    - "berufserfahrung"
+    - "referendar"
+    - "spontanea"
+    - "candidatura"
+    - "stagiaire"
+    - "solicitor"
+    - "trainee"
+
+  # PRECISION MODE: to instead receive only high-confidence entry-level hits,
+  # delete "associate"/"attorney"/"lawyer" from include_keywords above. The
+  # explicit entry signals + regexes then do the matching (far fewer emails,
+  # but generically-titled entry roles will be missed).
 
   # Excluded unless include_summer_associate is true.
   summer_associate_keywords:
@@ -59,3 +141,150 @@ filters:
     - "summer program"
     - "1l summer"
     - "2l summer"
+
+  # US vs foreign location markers for the us_only gate (lowercase; word-boundary
+  # matched against the posting location). US list is deliberately broad (a false
+  # "US" only keeps an extra posting); foreign list must contain NO US place.
+  us_location_markers:
+    - "usa"
+    - "united states"
+    - "u.s."
+    - "washington"
+    - "d.c."
+    - "new york"
+    - "los angeles"
+    - "san francisco"
+    - "silicon valley"
+    - "palo alto"
+    - "menlo park"
+    - "redwood city"
+    - "san diego"
+    - "chicago"
+    - "boston"
+    - "houston"
+    - "dallas"
+    - "austin"
+    - "miami"
+    - "atlanta"
+    - "seattle"
+    - "denver"
+    - "philadelphia"
+    - "century city"
+    - "wilmington"
+    - "short hills"
+    - "costa mesa"
+    - "newport beach"
+    - "orange county"
+    - "northern california"
+    - "southern california"
+    - "tampa"
+    - "nashville"
+    - "richmond"
+    - "white plains"
+    - "charlotte"
+    - "baltimore"
+    - "salt lake city"
+    - "rochester"
+    - "reston"
+    - "portland"
+    - "orlando"
+    - "tysons"
+    - "birmingham"
+    - "tallahassee"
+    - "louisville"
+    - "raleigh"
+    - "minneapolis"
+    - "san jose"
+    - "sacramento"
+    - "pittsburgh"
+    - "cleveland"
+    - "columbus"
+    - "detroit"
+    - "phoenix"
+    - "las vegas"
+    - "new jersey"
+    - "california"
+    - "texas"
+    - "florida"
+    - "illinois"
+    - "virginia"
+    - "colorado"
+    - "georgia"
+    - "massachusetts"
+    - "pennsylvania"
+    - "michigan"
+    - "ohio"
+    - "north carolina"
+    - "delaware"
+    - "connecticut"
+
+  foreign_location_markers:
+    - "france"
+    - "paris"
+    - "united kingdom"
+    - "uk"
+    - "england"
+    - "scotland"
+    - "london"
+    - "newcastle"
+    - "manchester"
+    - "belfast"
+    - "germany"
+    - "frankfurt"
+    - "munich"
+    - "hamburg"
+    - "dusseldorf"
+    - "düsseldorf"
+    - "berlin"
+    - "stuttgart"
+    - "cologne"
+    - "netherlands"
+    - "amsterdam"
+    - "belgium"
+    - "brussels"
+    - "luxembourg"
+    - "spain"
+    - "madrid"
+    - "alicante"
+    - "italy"
+    - "milan"
+    - "milano"
+    - "rome"
+    - "roma"
+    - "greece"
+    - "athens"
+    - "switzerland"
+    - "geneva"
+    - "zurich"
+    - "austria"
+    - "vienna"
+    - "ireland"
+    - "dublin"
+    - "singapore"
+    - "hong kong"
+    - "beijing"
+    - "shanghai"
+    - "shenzhen"
+    - "tokyo"
+    - "japan"
+    - "jakarta"
+    - "seoul"
+    - "korea"
+    - "taipei"
+    - "bangkok"
+    - "dubai"
+    - "abu dhabi"
+    - "riyadh"
+    - "saudi arabia"
+    - "qatar"
+    - "doha"
+    - "mexico city"
+    - "sao paulo"
+    - "são paulo"
+    - "brazil"
+    - "johannesburg"
+    - "south africa"
+    - "sydney"
+    - "australia"
+    - "toronto"
+    - "canada"

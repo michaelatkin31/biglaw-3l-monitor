@@ -60,10 +60,44 @@ def test_short_token_word_boundary():
     assert not f.decide(_p("Global Mobility Coordinator")).matched
 
 
-def test_plain_associate_not_matched():
-    # A bare "Associate" (likely lateral) should not match.
+def test_recall_first_plain_associate_matches():
+    # Recall-first design: a bare US associate/attorney role DOES match (we would
+    # rather surface a lateral role than miss a generically-titled entry role).
     f = _filter()
-    assert not f.decide(_p("Corporate Associate")).matched
+    assert f.decide(_p("Corporate Associate")).matched
+    assert f.decide(_p("Litigation Attorney", "New York, NY")).matched
+
+
+def test_recall_first_seniority_guardrails():
+    # ...but roles a graduating 3L plainly cannot take are excluded.
+    f = _filter()
+    assert not f.decide(_p("Senior Corporate Associate")).matched
+    assert not f.decide(_p("Real Estate Associate (Junior to Mid-Level)")).matched
+    assert not f.decide(_p("Corporate M&A Associate (Mid-Senior Level)")).matched
+    # staff titles that would otherwise slip in via the bare "attorney" include
+    assert not f.decide(_p("Conflicts Attorney")).matched
+    assert not f.decide(_p("Staff Attorney - Litigation")).matched
+
+
+def test_us_only_geo_gate():
+    f = _filter()  # config default us_only: true
+    # Clearly-foreign location + no US marker => dropped.
+    d = f.decide(_p("Corporate Associate", "London, United Kingdom"))
+    assert not d.matched and "non-US" in d.reason
+    d = f.decide(_p("Associate", "Amsterdam, Netherlands"))
+    assert not d.matched
+    # A US location is kept.
+    assert f.decide(_p("Corporate Associate", "New York, NY")).matched
+    # Recall-safe: ambiguous / multi-location strings are NOT treated as foreign.
+    assert f.decide(_p("Corporate Associate", "3 Locations")).matched
+    assert f.decide(_p("Corporate Associate", "")).matched
+    # A role naming BOTH a foreign and a US office is kept (US-inclusive).
+    assert f.decide(_p("Corporate Associate", "New York or London")).matched
+
+
+def test_us_only_can_be_disabled():
+    f = _filter(us_only=False)
+    assert f.decide(_p("Corporate Associate", "London, United Kingdom")).matched
 
 
 def test_apply_returns_only_matches():

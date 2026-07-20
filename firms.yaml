@@ -88,10 +88,11 @@ firms:
     note: "Vault #7. Attorney apps email-based; business roles on custom careers.davispolk.com. 'Law Students & Trainees' page present."
   - name: "Paul, Weiss, Rifkind, Wharton & Garrison"
     careers_url: "https://www.paulweiss.com/careers"
-    ats_type: other
-    ats_identifier: null
+    ats_type: workday
+    ats_identifier: "weis/Careers"
+    workday_host: weis.wd1.myworkdayjobs.com
     public_entry_level: true
-    note: "Vault #8. Oracle Taleo: paulweiss.taleo.net/careersection/ex/joblist.ftl (no public token). Lateral + first-year + clerks apply via portal."
+    note: "Vault #8. TENTATIVE (2026-07-20): real workday tenant is weis.wd1/Careers, but the CXS endpoint is Cloudflare bot-gated (uniform 422/406/500 from this probe IP) -- may succeed from the GitHub Actions runner IP, may not. If it keeps failing in the run log, revert to ats_type: other. Per-firm failure never aborts the run."
   - name: "Milbank"
     careers_url: "https://www.milbank.com/en/careers/index.html"
     ats_type: other
@@ -164,10 +165,10 @@ firms:
     note: "SilkRoad: wilmerhalecareers.silkroad.com/wilmerhaleext/EmploymentListings.html. 'Entry Level or Lateral Attorneys' page."
   - name: "Morrison & Foerster"
     careers_url: "https://careers.mofo.com/"
-    ats_type: other
-    ats_identifier: null
+    ats_type: careerpage
+    ats_identifier: "mofo"
     public_entry_level: false
-    note: "Attorney board mofo.career.page/jobs/{id} (vendor unidentified); also Taleo (org MOFO) + flo_recruit for OCI. Explicitly does NOT accept first-year/clerk submissions publicly."
+    note: "Live-verified 2026-07-20: mofo.career.page/api/jobs returns 200, 65 jobs incl 23 Associate/Attorney legal roles AND genuine entry signals ('2026 Post-Clerkship Associate Attorney', '2027 2L Summer Associate'). iCIMS-backed but this career.page front-end is clean public JSON. One of the few firms that PUBLICLY posts entry-level attorney roles."
   - name: "Paul Hastings"
     careers_url: "https://www.paulhastings.com/careers"
     ats_type: virecruit
@@ -386,10 +387,11 @@ firms:
     note: "Confirmed hklaw.wd1.myworkdayjobs.com/Holland_Knight."
   - name: "Greenberg Traurig"
     careers_url: "https://www.gtlaw.com/en/careers"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: workday
+    ats_identifier: "gtlaw/GTLAW"
+    workday_host: gtlaw.wd1.myworkdayjobs.com
     public_entry_level: true
-    note: "Custom CMS careers section; no ATS host surfaced. Law student + attorney tracks public."
+    note: "Live-verified 2026-07-20: workday gtlaw.wd1/GTLAW returns 200, total=244, real Associate roles + entry signals (2L Summer Associate 'class of 2028', junior-level associates)."
   # NOTE: Clifford Chance researched (ats unknown, jobs.cliffordchance.com) but EXCLUDED — London-HQ Magic Circle, not Am Law 200.
 
   # ---- Batch 5 ----
@@ -415,10 +417,11 @@ firms:
     note: "Self-hosted/white-labeled portal at careers.fr.com; no third-party vendor host found. 2026 Summer Associate program public."
   - name: "HSF Kramer (Kramer Levin)"
     careers_url: "https://careers.hsfkramer.com/global/en/us/home"
-    ats_type: flo_recruit
-    ats_identifier: null
+    ats_type: workday
+    ats_identifier: "herbertsmithfreehills/External"
+    workday_host: herbertsmithfreehills.wd3.myworkdayjobs.com
     public_entry_level: true
-    note: "FLAG: Kramer Levin was Vault #92; merged into HSF Kramer and may have fallen off current top 100. ATS: florecruit.com/v2/app/forward/firms/hsfkramer + legacy florecruit.com/v2/app/kramerlevin/... The merged global careers site may itself be a separate ATS (Phenom/Avature-style)."
+    note: "FLAG: Kramer Levin was Vault #92; merged into HSF Kramer. Live-verified 2026-07-20: workday herbertsmithfreehills.wd3/External returns 200, total=105, incl US NY Associates + 'NQ Solicitor' entry signals. Board skews UK/EU (us_only geo filter trims the non-US tail)."
   - name: "Schulte Roth & Zabel"
     careers_url: "https://www.srz.com/en/careers"
     ats_type: other
@@ -433,10 +436,10 @@ firms:
     note: "Confirmed florecruit.com/v2/app/cahill/jobs/.../apply. Summer + current-openings pages public."
   - name: "Hughes Hubbard & Reed"
     careers_url: "https://www.hugheshubbard.com/careers"
-    ats_type: other
-    ats_identifier: null
+    ats_type: greenhouse
+    ats_identifier: "hugheshubbardreedllp"
     public_entry_level: true
-    note: "Only hugheshubbard.com/careers seen; no third-party host. OCI + summer program public. Custom/self-hosted."
+    note: "Live-verified 2026-07-20: greenhouse boards-api/hugheshubbardreedllp returns 200, all attorney/legal roles incl entry signals ('2027 Summer Associate', 'Corporate M&A Associate (Class Years ...)'). A genuine attorney board (unlike Gibson Dunn/Fried Frank staff boards)."
   - name: "Boies Schiller Flexner"
     careers_url: "https://www.bsfllp.com/careers/overview.html"
     ats_type: other
@@ -471,10 +474,10 @@ firms:
     note: "Confirmed troutman.wd5.myworkdayjobs.com/TPRecruit1 (2025 Troutman Pepper + Locke Lord merger)."
   - name: "Crowell & Moring"
     careers_url: "https://www.crowell.com/en/careers"
-    ats_type: other
-    ats_identifier: null
+    ats_type: smartrecruiters
+    ats_identifier: "CrowellMoring"
     public_entry_level: true
-    note: "SmartRecruiters (slug CrowellMoring): careers.smartrecruiters.com/CrowellMoring/lawyers. SmartRecruiters not in the enum set, so other; slug noted here."
+    note: "Live-verified 2026-07-20: SmartRecruiters public API api.smartrecruiters.com/v1/companies/CrowellMoring/postings returns 200 (totalFound 0 right now; hosted board careers.smartrecruiters.com/CrowellMoring/lawyers confirms attorney roles post here when open)."
   - name: "Susman Godfrey"
     careers_url: "https://www.susmangodfrey.com/career/open-positions/"
     ats_type: other
@@ -492,10 +495,11 @@ firms:
     note: "Vault #49 (2026, confirmed). Am Law 100. ATS not researched."
   - name: "Pillsbury Winthrop Shaw Pittman"
     careers_url: "https://www.pillsburylaw.com/en/careers.html"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: workday
+    ats_identifier: "pillsburylaw/External"
+    workday_host: pillsburylaw.wd5.myworkdayjobs.com
     public_entry_level: unknown
-    note: "Vault #58 (2026, confirmed). Am Law 100. ATS not researched."
+    note: "Vault #58 (2026). Live-verified 2026-07-20: workday pillsburylaw.wd5/External returns 200, total=56, real attorney roles (currently all lateral)."
   - name: "McGuireWoods"
     careers_url: "https://www.mcguirewoods.com/careers/"
     ats_type: unknown

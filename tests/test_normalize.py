@@ -1,7 +1,9 @@
 from core.normalize import (
     clean_text,
+    normalize_careerpage_job,
     normalize_greenhouse_job,
     normalize_lever_posting,
+    normalize_smartrecruiters_posting,
     normalize_workday_job,
 )
 
@@ -42,6 +44,56 @@ def test_lever_epoch():
     assert p.location == "Chicago"
     assert p.posted_date == "2023-11-14"  # ms epoch -> ISO date
     assert p.ats == "lever"
+
+
+def test_careerpage_job():
+    job = {
+        "data": {
+            "title": "2026 Post-Clerkship Associate Attorney",
+            "req_id": "5793",
+            "slug": "5793",
+            "apply_url": "https://lateralattorney-mofo.icims.com/jobs/5793/login",
+            "full_location": "New York, New York, United States",
+            "city": "New York",
+            "state": "New York",
+            "country": "United States",
+            "posted_date": "2026-02-24T17:08:00+0000",
+            "create_date": "2026-02-20T00:00:00+0000",
+        }
+    }
+    p = normalize_careerpage_job("MoFo", job)
+    assert p.job_id == "5793"
+    assert p.title == "2026 Post-Clerkship Associate Attorney"
+    assert p.location == "New York, New York, United States"
+    assert p.url == "https://lateralattorney-mofo.icims.com/jobs/5793/login"
+    assert p.ats == "careerpage"
+    assert p.posted_date == "2026-02-24T17:08:00+0000"
+
+
+def test_careerpage_job_no_title_is_dropped():
+    assert normalize_careerpage_job("MoFo", {"data": {"req_id": "1"}}) is None
+
+
+def test_smartrecruiters_posting():
+    posting = {
+        "id": "744000138709871",
+        "name": "Litigation Associate",
+        "refNumber": "REF1",
+        "releasedDate": "2026-07-20T18:23:13.590Z",
+        "location": {
+            "city": "Washington",
+            "region": "DC",
+            "country": "us",
+            "fullLocation": "Washington, DC, USA",
+        },
+    }
+    p = normalize_smartrecruiters_posting("Crowell & Moring", posting, "CrowellMoring")
+    assert p.job_id == "744000138709871"
+    assert p.title == "Litigation Associate"
+    assert p.location == "Washington, DC, USA"
+    assert p.url == "https://jobs.smartrecruiters.com/CrowellMoring/744000138709871"
+    assert p.ats == "smartrecruiters"
+    assert p.posted_date == "2026-07-20T18:23:13.590Z"
 
 
 def test_workday_url_and_id():

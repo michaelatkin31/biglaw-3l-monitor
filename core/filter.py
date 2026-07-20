@@ -45,6 +45,16 @@ class PostingFilter:
         # Search title by default; optionally fold in location/other fields.
         self.search_fields = filter_cfg.get("search_fields", ["title"])
 
+        # US-only geo gate. BigLaw public boards carry a large tail of foreign
+        # trainee/stage/NQ programmes (London, Amsterdam, Milan, Singapore, ...)
+        # that are irrelevant to a US 3L and would otherwise flood a recall-first
+        # keyword net. A posting is dropped ONLY when its location clearly names a
+        # foreign place AND names no US place -- so ambiguous locations
+        # ("3 Locations", "Multi-City", a bare US city) are always kept (recall).
+        self.us_only = bool(filter_cfg.get("us_only", False))
+        self.foreign_markers = [m.lower() for m in filter_cfg.get("foreign_location_markers", [])]
+        self.us_markers = [m.lower() for m in filter_cfg.get("us_location_markers", [])]
+
     def _haystack(self, posting: Posting) -> str:
         parts = []
         for field in self.search_fields:
@@ -58,6 +68,21 @@ class PostingFilter:
         # phrases still match naturally.
         return re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", text) is not None
 
+    def _is_foreign_only(self, posting: Posting) -> bool:
+        """True iff the location names a foreign place and no US place.
+
+        Recall-safe: unknown/ambiguous locations ("3 Locations", a bare US city
+        with no state, empty) are NOT foreign-only, so they are kept.
+        """
+        loc = (getattr(posting, "location", "") or "").lower()
+        if not loc:
+            return False
+        has_foreign = any(self._kw_hit(m, loc) for m in self.foreign_markers)
+        if not has_foreign:
+            return False
+        has_us = any(self._kw_hit(m, loc) for m in self.us_markers)
+        return not has_us
+
     def decide(self, posting: Posting) -> FilterDecision:
         text = self._haystack(posting)
 
@@ -65,6 +90,12 @@ class PostingFilter:
         for kw in self.exclude_keywords:
             if self._kw_hit(kw, text):
                 return FilterDecision(False, f"excluded by keyword: {kw!r}")
+
+        # US-only geo gate: drop clearly-foreign postings before include matching
+        # so a recall-first keyword net doesn't surface London/Milan/Singapore
+        # trainee & NQ programmes to a US 3L.
+        if self.us_only and self._is_foreign_only(posting):
+            return FilterDecision(False, f"excluded non-US location: {posting.location!r}")
 
         # Summer roles: excluded by default, but when the toggle is on they
         # become *includes* (merely un-excluding them would leave nothing to

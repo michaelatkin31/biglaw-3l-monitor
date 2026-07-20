@@ -52,26 +52,42 @@ The pipeline per run:
 ## Coverage: what actually gets polled
 
 `firms.yaml` ships with **73 firms** (the best-effort Vault-100 ∩ Am-Law-200
-intersection) already **classified by ATS**. Classification was derived from URLs
-seen in web-search results (the build environment had no direct egress), so it's
-good but **not live-verified**.
+intersection) **classified by ATS**. As of 2026-07-20 the classification of every
+firm was **live-verified** (each careers page fetched, each candidate JSON
+endpoint hit, each board's job titles inspected for real attorney roles).
 
-Only three ATS backends have public JSON fetchers, so the monitor actively polls:
+Six ATS backends have public JSON fetchers, so the monitor actively polls
+**28 firms**:
 
-- **1 Greenhouse** firm (Fried Frank). *(Gibson Dunn's `gibsondunn` board was
-  live-verified to be staff-only — no attorney/associate pipeline — and moved to
-  `other`; its real attorney apply path is a custom/viRecruit portal.)*
-- **20 Workday** firms (Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
+- **24 Workday** — Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
   Spalding, Fenwick, Goodwin, McDermott, Hogan Lovells, Norton Rose Fulbright,
   DLA Piper, Alston & Bird, Morgan Lewis, Holland & Knight, Munger Tolles,
-  Perkins Coie, Wilson Sonsini, Gunderson, Troutman) — all with `workday_host`
-  pinned so no data-center probing is needed.
+  Perkins Coie, Wilson Sonsini, Gunderson, Troutman, **Greenberg Traurig**,
+  **Pillsbury**, **HSF Kramer**, **Paul Weiss** (last is Cloudflare-gated and may
+  fail from some IPs) — all with `workday_host` pinned.
+- **2 Greenhouse** — Fried Frank, **Hughes Hubbard** (both genuine attorney
+  boards). *(Gibson Dunn's `gibsondunn` board and Fried Frank were checked for the
+  staff-board trap; Gibson Dunn was staff-only and moved to `other`.)*
+- **1 career.page** — **Morrison & Foerster** (iCIMS-backed but exposes clean JSON
+  at `mofo.career.page/api/jobs`; one of the few firms that *publicly* posts
+  entry-level roles, e.g. "Post-Clerkship Associate Attorney").
+- **1 SmartRecruiters** — **Crowell & Moring**.
 
-The other ~51 firms use `flo_recruit` / `virecruit` / `viglobal` / iCIMS / Taleo
-/ custom portals (`other`) or are `unknown` — they're **recognized but skipped**
-because there's no public API to poll. This is the coverage ceiling: most BigLaw
-first-year hiring runs through OCI / school-gated portals, not a public feed. See
-`DECISIONS.md` §4.
+The other **45 firms** are hard-gated — `virecruit` / `viglobal` (ASP.NET
+self-apply), iCIMS / Taleo / LawCruit / Avature / Radancy, Flo Recruit (auth-gated
+JSON), or email-only — with **no pollable public endpoint**. A few (Wachtell,
+Proskauer) *do* have a public API but it's a **staff-only board** with zero
+attorneys, so polling it would be noise. This is the coverage ceiling: most BigLaw
+entry-level hiring runs through OCI / 2L-summer programs / school-gated portals,
+not a public feed. See `DECISIONS.md` §4.
+
+> **Reality for a job-seeker:** even among the 28 polled firms, live data shows
+> the public boards are overwhelmingly *lateral* (experienced) associate roles.
+> Genuine entry-level postings ("first-year", "class of 202X", "post-clerkship")
+> are rare on public boards. The filter is therefore tuned **recall-first** (see
+> "Tuning the filter") so the rare real one is never missed — at the cost of some
+> lateral roles in the digest. Treat this tool as *one* signal, not a substitute
+> for OSCAR (clerkships), NALP, and direct firm-by-firm checks.
 
 **Verify / refresh the classification** (optional but recommended) from any
 machine with open outbound HTTPS:
@@ -151,18 +167,27 @@ if you'd rather not commit a binary.
 ## Tuning the filter
 
 All keyword/regex lists live in `config.yaml` under `filters:` — no code edits
-needed.
+needed. The filter is **recall-first** by design (this is a primary job-search
+net; missing a real posting is worse than showing a lateral one):
 
-- **Include** (any match): `first-year associate`, `entry-level associate`,
-  `new grad`, `3L`, `entering class`, plus class-year regexes (a near-future
-  4-digit year next to "associate"/"class", e.g. `Class of 2027`).
-- **Exclude** (any match wins over include): `lateral`, `partner`, `counsel`,
-  `staff`, `paralegal`, `secretary`, `patent agent`, `librarian`, `law clerk`,
-  `intern`.
-- **Summer associate**: excluded by default; flip `include_summer_associate:
-  true` to include (this promotes the summer keywords to *includes*).
-- Short tokens like `3L` are matched on word boundaries so they don't match
-  inside unrelated words.
+- **Include** (any match): the bare fee-earner words `associate` / `attorney` /
+  `lawyer` cast the wide net, plus explicit entry signals (`first-year
+  associate`, `entry-level associate`, `3L`, `junior associate`, `judicial
+  clerk`, class-year regexes like `Class of 2027` / `Class Years 2026`).
+- **Exclude** (any match wins over include): seniority a 3L can't fill
+  (`senior`, `mid-level`, `of counsel`, `partner`, `lateral`, `experienced`);
+  non-attorney staff titles (`paralegal`, `coordinator`, `manager`, `analyst`,
+  `recruiting`, `conflicts`, …); and foreign-qualification words (`solicitor`,
+  `trainee`, `m/w/d`, `rechtsanwalt`, …).
+- **US-only geo gate** (`us_only: true`): drops postings whose location names a
+  foreign place and no US place (kills the London/Frankfurt/Singapore trainee
+  tail). Recall-safe — ambiguous locations ("3 Locations", a bare US city) are
+  kept. Tune via `us_location_markers` / `foreign_location_markers`.
+- **Summer associate**: excluded by default (a graduated 3L's summer window has
+  passed); flip `include_summer_associate: true` to include 2L summer programs.
+- **Precision mode**: for far fewer, higher-confidence emails, delete
+  `associate`/`attorney`/`lawyer` from `include_keywords` — the explicit entry
+  signals then do the matching (but generically-titled entry roles get missed).
 
 Every fetched-but-filtered posting is logged at DEBUG (`-v`) so you can audit the
 false-negative rate.
@@ -176,8 +201,8 @@ Edit `firms.yaml`:
 ```yaml
 - name: "Example LLP"
   careers_url: "https://www.example.com/careers"
-  ats_type: greenhouse          # greenhouse | lever | workday | generic | unknown
-  ats_identifier: "examplellp"  # GH board token | Lever slug | "tenant/site" (Workday)
+  ats_type: greenhouse          # greenhouse|lever|workday|generic|careerpage|smartrecruiters|unknown
+  ats_identifier: "examplellp"  # GH token | Lever slug | "tenant/site" (Workday) | career.page subdomain | SmartRecruiters company id
   public_entry_level: unknown
   note: ""
 ```

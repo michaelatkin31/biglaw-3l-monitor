@@ -96,6 +96,68 @@ def normalize_workday_job(firm: str, job: dict, base_url: str) -> Posting:
     )
 
 
+# --- career.page (Jibe/Phenom SEO front-end; e.g. Morrison & Foerster) ------
+# API: https://{sub}.career.page/api/jobs?limit=N&offset=M
+# Returns {jobs: [{data: {title, req_id/slug, apply_url, full_location, city,
+# state, country, posted_date, create_date, categories:[{name}]}}], totalCount}.
+# Useful because it exposes an iCIMS-backed board as clean public JSON.
+
+
+def normalize_careerpage_job(firm: str, job: dict) -> Optional[Posting]:
+    data = job.get("data") if isinstance(job.get("data"), dict) else job
+    title = clean_text(data.get("title"))
+    if not title:
+        return None
+    location = clean_text(data.get("full_location")) or clean_text(
+        ", ".join(
+            str(p)
+            for p in (data.get("city"), data.get("state"), data.get("country"))
+            if p
+        )
+    )
+    job_id = clean_text(data.get("req_id") or data.get("slug")) or clean_text(
+        data.get("apply_url")
+    )
+    return Posting(
+        firm=firm,
+        job_id=job_id or f"{firm}:{title}",
+        title=title,
+        location=location,
+        url=clean_text(data.get("apply_url")),
+        ats="careerpage",
+        posted_date=clean_text(data.get("posted_date") or data.get("create_date"))
+        or None,
+    )
+
+
+# --- SmartRecruiters -------------------------------------------------------
+# API: https://api.smartrecruiters.com/v1/companies/{company}/postings
+# Each posting: {id, name, refNumber, releasedDate, location:{city, region,
+# country, fullLocation}}. Public apply URL: jobs.smartrecruiters.com/{company}/{id}
+
+
+def normalize_smartrecruiters_posting(firm: str, posting: dict, company: str) -> Posting:
+    loc = posting.get("location") or {}
+    location = clean_text(loc.get("fullLocation")) or clean_text(
+        ", ".join(
+            str(p)
+            for p in (loc.get("city"), loc.get("region"), loc.get("country"))
+            if p
+        )
+    )
+    job_id = clean_text(posting.get("id")) or clean_text(posting.get("refNumber"))
+    url = f"https://jobs.smartrecruiters.com/{company}/{job_id}" if job_id else ""
+    return Posting(
+        firm=firm,
+        job_id=job_id or url or f"{firm}:{clean_text(posting.get('name'))}",
+        title=clean_text(posting.get("name")),
+        location=location,
+        url=url,
+        ats="smartrecruiters",
+        posted_date=clean_text(posting.get("releasedDate")) or None,
+    )
+
+
 # --- Generic (schema.org JobPosting JSON-LD) -------------------------------
 
 
