@@ -70,7 +70,7 @@ _TITLE_SPECIFIC = re.compile(r'[-,/(|]|\b(20\d\d|junior|senior|mid|entry|lateral
 _NAV_TITLE = re.compile(r'^(experienced |lateral |our |meet our |why |about |current )?'
                         r'(attorneys?|lawyers?|associates?|counsel|paralegals?|openings?|opportunities?'
                         r'|positions?|advertising|professionals?|staff)([ &].*)?$', re.I)
-_TITLE_ELS = ("h2,h3,h4,h5,li,td,p,a,[class*=job],[class*=position],[class*=opening],"
+_TITLE_ELS = ("h2,h3,h4,h5,li,td,p,a,span,[class*=job],[class*=position],[class*=opening],"
               "[class*=title],[class*=posting],[class*=vacancy],[class*=role]")
 _EVAL_TITLES = (
     "els=>els.map(e=>{let a=e.matches('a')?e:(e.closest('a')||e.querySelector('a'));"
@@ -180,6 +180,9 @@ class BrowserFetcher(Fetcher):
             pg.goto(url, wait_until="domcontentloaded", timeout=45000)
             pg.wait_for_timeout(6000)
             links = _collect(pg)
+            if len(links) < 3:  # some boards load jobs via a slow XHR -- wait & retry
+                pg.wait_for_timeout(7000)
+                links = _collect(pg) or links
             if len(links) < 3:  # try one hop toward the openings list
                 try:
                     cands = pg.eval_on_selector_all("a", _EVAL_LINKS)

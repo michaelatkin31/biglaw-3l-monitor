@@ -501,8 +501,8 @@ firms:
   # agent (Am Law 100/200 firms); ATS NOT researched (no ATS sub-agent batch ran) ----
   - name: "K&L Gates"
     careers_url: "https://www.klgates.com/careers"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: browser
+    ats_identifier: "https://klgates.recsolu.com/job_boards/o8D4HDBB0N8jcVnRfV263g"
     public_entry_level: unknown
     note: "Vault #49 (2026, confirmed). Am Law 100. ATS not researched."
   - name: "Pillsbury Winthrop Shaw Pittman"
@@ -514,8 +514,8 @@ firms:
     note: "Vault #58 (2026). Live-verified 2026-07-20: workday pillsburylaw.wd5/External returns 200, total=56, real attorney roles (currently all lateral)."
   - name: "McGuireWoods"
     careers_url: "https://www.mcguirewoods.com/careers/"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: browser
+    ats_identifier: "https://mcguire.careers.micronapps.com/job_post.aspx"
     public_entry_level: unknown
     note: "Vault #70 (2026, confirmed). Am Law 100. ATS not researched."
   - name: "Kellogg, Hansen, Todd, Figel & Frederick"
