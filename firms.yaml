@@ -939,8 +939,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Careers URL is careers-kdvlaw.icims.com (iCIMS). Job search HTML returned 200 and references attorney roles, but iCIMS is auth/portal-gated with no open public JSON API per spec. Not pollable."
   - name: "Kelley Drye & Warren"
     careers_url: "https://www.kelleydrye.com/careers/attorney-opportunities"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://KJHX12M32H-dsn.algolia.net/1/indexes/prod_entries/query"
+    json_post: {"params": "filters=sectionHandle:careers&hitsPerPage=100"}
+    json_headers: {"X-Algolia-Application-Id": "KJHX12M32H", "X-Algolia-API-Key": "b344faf2eb55ee67fe3a701afdcfe012"}
     public_entry_level: unknown
     note: "Added 2026-07-20 (Am Law 200 union expansion). Adobe Experience Manager careers site with JS 'Advanced Search' at /careers/attorney-opportunities?careerType=Attorney#attorneysearch; no named ATS, no ld+json JobPosting, no pollable API found"
   - name: "Lewis Rice"
