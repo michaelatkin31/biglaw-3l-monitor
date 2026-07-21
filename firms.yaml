@@ -146,10 +146,10 @@ firms:
     note: "iCIMS: careers-sidley.icims.com/jobs/intro (no token). Board skews lateral/staff; entry likely via OCI."
   - name: "Ropes & Gray"
     careers_url: "https://www.ropesgrayrecruiting.com/en/us"
-    ats_type: other
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://www.ropesgrayrecruiting.com/sitecore/api/jobsearch"
     public_entry_level: true
-    note: "Vault #20. Custom recruiting site ropesgrayrecruiting.com; no vendor ATS host confirmed. US Law Students & Graduates page present."
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Vault #20. Custom recruiting site ropesgrayrecruiting.com; no vendor ATS host confirmed. US Law Stud"
   - name: "Arnold & Porter Kaye Scholer"
     careers_url: "https://www.arnoldporter.com/en/careers/lawyers/lateral-opportunities"
     ats_type: other
@@ -334,10 +334,10 @@ firms:
     note: "Confirmed nrf.wd3.myworkdayjobs.com/External plus a /Graduates site."
   - name: "Orrick, Herrington & Sutcliffe"
     careers_url: "https://talent.orrick.com/jobs"
-    ats_type: viglobal
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://talent.orrick.com/api/jobs?page=1&sortBy=posted_date&descending=true&internal=false"
     public_entry_level: true
-    note: "Med-high confidence: talent.orrick.com (vi by Aderant / viRecruit hosted pattern; 'virecruit' not literally in URL). Job IDs like talent.orrick.com/jobs/1628."
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Med-high confidence: talent.orrick.com (vi by Aderant / viRecruit hosted pattern; 'virecruit' not li"
   - name: "Gunderson Dettmer"
     careers_url: "https://www.gunder.com/en/careers"
     ats_type: workday
@@ -372,10 +372,10 @@ firms:
     note: "Confirmed perkinscoie.wd115.myworkdayjobs.com/perkinscoieexternal. Host was wd1 (422); live-verified wd115 2026-07-20."
   - name: "Baker McKenzie"
     careers_url: "https://careers.bakermckenzie.com/en_US/opportunities/SearchJobs"
-    ats_type: other
-    ats_identifier: null
+    ats_type: browser
+    ats_identifier: "https://careers.bakermckenzie.com/en_US/opportunities/SearchJobs"
     public_entry_level: true
-    note: "Med confidence: Avature (careers.bakermckenzie.com/en_US/opportunities/SearchJobs + /TalentCommunity — Avature signature). Summer program public."
+    note: "RECOVERED 2026-07-20 via headless discovery (browser). Med confidence: Avature (careers.bakermckenzie.com/en_US/opportunities/SearchJobs + /TalentCommunity"
   - name: "Sheppard, Mullin, Richter & Hampton"
     careers_url: "https://www.sheppard.com/careers"
     ats_type: flo_recruit
@@ -519,10 +519,10 @@ firms:
     note: "Vault #70 (2026, confirmed). Am Law 100. ATS not researched."
   - name: "Kellogg, Hansen, Todd, Figel & Frederick"
     careers_url: "https://www.kellogghansen.com/careers"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://kellogghansen.isolvedhire.com/core/jobs/4798?getParams=%7B%22cityUrl%22:%22%22,%22countryAbbreviation%22:%22%22,%22stateAbbreviation%22:%22%22,%22isInternal%22:0,%22showPayFrequency%22:1,%22showLocation%22:1,%22locationTitle%22:%22Location%22,%22locationWeight%22:2,%22showCustomCategory%22:0,%22customCategoryTitle%22:%22%22,%22customCategoryWeight%22:0,%22showEmploymentType%22:1,%22employmentTypeTitle%22:%22Employment+Type%22,%22employmentTypeWeight%22:5,%22showJobBoardClassifications%22:0,%22jobBoardClassificationsTitle%22:%22Classification%22,%22jobBoardClassificationsWeight%22:4,%22showJobCategory%22:0,%22jobCategoryTitle%22:%22%22,%22jobCategoryWeight%22:0,%22showOrgUnit%22:0,%22orgUnitTitle%22:%22Department%22,%22orgUnitWeight%22:2,%22showDate%22:0,%22dateTitle%22:%22Closing+Date%22,%22dateWeight%22:3,%22showWorkplaceType%22:0,%22workplaceTypeTitle%22:%22%22,%22workplaceTypeWeight%22:0,%22chatToApplyButton%22:%220%22,%22chatToApplySort%22:%22%22%7D"
     public_entry_level: unknown
-    note: "Vault #74 (2026, confirmed; up from 81). Litigation boutique; in Am Law rankings. ATS not researched."
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Vault #74 (2026, confirmed; up from 81). Litigation boutique; in Am Law rankings. ATS not researched"
   - name: "Mintz, Levin, Cohn, Ferris, Glovsky and Popeo"
     careers_url: "https://www.mintz.com/careers"
     ats_type: virecruit
@@ -694,10 +694,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). FloRecruit portal at florecruit.com/v2/app/hodgsonruss/jobs linked from attorney careers page; JSON auth-gated, not pollable"
   - name: "Hunton Andrews Kurth"
     careers_url: "https://www.hunton.com/careers/lateral-attorneys"
-    ats_type: other
-    ats_identifier: null
+    ats_type: browser
+    ats_identifier: "https://www.hunton.com/careers/lateral-attorneys"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). server-rendered /careers/job-{slug} links; not a named ATS Entry signals seen: New York Entry-Level Capital Markets Associate; New York Entry-Level Global Privacy and Cybersecurity Associate."
+    note: "RECOVERED 2026-07-20 via headless discovery (browser). Added 2026-07-20 (Am Law 200 union expansion). server-rendered /careers/job-{slug} links; not a name"
   - name: "Husch Blackwell"
     careers_url: "https://legalcareers.huschblackwell.com/viRecruitSelfApply/RecDefault.aspx"
     ats_type: other
@@ -719,10 +719,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). No third-party ATS; applications route through a Monday.com form (forms.monday.com/forms/3d08c4075ada24eb8d91e9d66627b98e). Careers organized into Partners/Associates/Staff/Summer Associates category "
   - name: "Kilpatrick Townsend & Stockton"
     careers_url: "https://kilpatrickrecruits.com/open-positions/"
-    ats_type: icims
-    ats_identifier: null
+    ats_type: browser
+    ats_identifier: "https://kilpatrickrecruits.com/open-positions/"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
+    note: "RECOVERED 2026-07-20 via headless discovery (browser). Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
   - name: "Lewis Brisbois Bisgaard & Smith"
     careers_url: "https://www.lewisbrisbois.com/careers"
     ats_type: icims
@@ -780,10 +780,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
   - name: "Seyfarth Shaw"
     careers_url: "https://www.seyfarth.com/careers.html"
-    ats_type: icims
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://careers.seyfarth.com/api/jobs?tags3=Legal&page=1&sortBy=relevance&descending=false&internal=false"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
   - name: "Shook, Hardy & Bacon"
     careers_url: ""
     ats_type: virecruit
@@ -822,10 +822,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Email-only application (jobs@stevenslee.com); openings listed on firm page, no ATS/no pollable endpoint"
   - name: "Stradley Ronon Stevens & Young"
     careers_url: "https://www.stradley.com/careers"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://florecruit.com/api/v2/public-jobs/stradley/career-page-jobs"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page behind Cloudflare ('Just a moment' interstitial) — returns HTTP 403 to WebFetch and curl; could not read ATS or openings"
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Added 2026-07-20 (Am Law 200 union expansion). Careers page behind Cloudflare ('Just a moment' inter"
   - name: "Taft Stettinius & Hollister"
     careers_url: "https://www.taftlaw.com/careers"
     ats_type: other
@@ -858,10 +858,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). No ATS and no job listings on the experienced-lawyers page; single 'Submit Your Resume' CTA to https://www.williamsmullen.com/lateral-inquiry form + recruiting-director email. Curl 200 with 0 JobPosti"
   - name: "Wilson Elser Moskowitz Edelman & Dicker"
     careers_url: "https://www.wilsonelser.com/careers-attorneys/current-opportunities"
-    ats_type: other
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://boards-api.greenhouse.io/v1/boards/wilsonelserattorneys/jobs?content=true"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). other; not pollable."
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Added 2026-07-20 (Am Law 200 union expansion). other; not pollable."
   - name: "Womble Bond Dickinson (US)"
     careers_url: "https://www.womblebonddickinson.com/us/careers/current-us-job-openings"
     ats_type: unknown
@@ -920,10 +920,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page is a narrative culture page with no job board, no ATS link/iframe, and no openings subpage. Directs candidates to Chief Legal Talent Officer (kfebeo@goulstonstorrs.com). 'lever' string ma"
   - name: "Herrick, Feinstein"
     careers_url: "https://www.herrick.com/careers/current-openings/"
-    ats_type: unknown
-    ats_identifier: null
+    ats_type: browser
+    ats_identifier: "https://www.herrick.com/careers/current-openings/"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). herrick.com/careers/current-openings returns HTTP 403 to both WebFetch and curl (bot protection); could not read ATS or openings"
+    note: "RECOVERED 2026-07-20 via headless discovery (browser). Added 2026-07-20 (Am Law 200 union expansion). herrick.com/careers/current-openings returns HTTP 403"
   - name: "Hinckley, Allen & Snyder"
     careers_url: "https://www.hinckleyallen.com/careers/"
     ats_type: other
@@ -956,10 +956,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page behind Cloudflare 'Just a moment' interstitial (_cf_chl_opt / challenge-platform); could not read ATS or openings"
   - name: "McDonald Hopkins"
     careers_url: "https://www.mcdonaldhopkins.com/careers/attorneys"
-    ats_type: other
-    ats_identifier: null
+    ats_type: browser
+    ats_identifier: "https://www.mcdonaldhopkins.com/careers/attorneys"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). Attorneys page lists 6 real attorney openings as CMS pages with no ATS, no iframe, and no ld+json JobPosting feed. Application is manual via email to Director of Recruiting (aripich@mcdonaldhopkins.co Entry signals seen: West Palm Beach Litigation Summer Associate 2027."
+    note: "RECOVERED 2026-07-20 via headless discovery (browser). Added 2026-07-20 (Am Law 200 union expansion). Attorneys page lists 6 real attorney openings as CMS "
   - name: "Michael Best & Friedrich"
     careers_url: "https://www.michaelbest.com/Careers"
     ats_type: unknown
@@ -1071,10 +1071,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). careers/open-positions-lateral-attorneys lists lateral attorney roles whose 'Apply' links go to florecruit.com/v2/app/bakerdonelson/jobs/... (flo_recruit, JSON auth-gated, not pollable). Firm also use"
   - name: "Bass, Berry & Sims PLC"
     careers_url: "https://www.bassberry.com/careers/lateral-attorneys/"
-    ats_type: flo_recruit
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://florecruit.com/api/v2/public-jobs/bassberry/career-page-jobs"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). Lateral-attorneys careers page directs applicants to Flo Recruit recruiting portal (florecruit.com/v2/app/bassberry/jobs); auth-gated, not pollable."
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Added 2026-07-20 (Am Law 200 union expansion). Lateral-attorneys careers page directs applicants to "
   - name: "Benesch, Friedlander, Coplan & Aronoff LLP"
     careers_url: "https://www.beneschlaw.com/careers/lateral-attorneys.html"
     ats_type: virecruit
@@ -1101,16 +1101,16 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
   - name: "Buchanan Ingersoll & Rooney PC"
     careers_url: "https://www.bipc.com/lateral-attorneys"
-    ats_type: other
-    ats_identifier: null
+    ats_type: browser
+    ats_identifier: "https://www.bipc.com/lateral-attorneys"
     public_entry_level: unknown
-    note: "viRecruit host unreachable/blocked 2026-07-20; kept other. Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+    note: "RECOVERED 2026-07-20 via headless discovery (browser). viRecruit host unreachable/blocked 2026-07-20; kept other. Added 2026-07-20 (Am Law 200 union expans"
   - name: "Butler Snow LLP"
     careers_url: "https://www.butlersnow.com/careers/attorneys/"
-    ats_type: other
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://careers-api.clearcompany.com/v1/d9651776-5d56-7ea6-75ac-819c504f0bb9?pageIndex=0&pageSize=25&source=CJB-0&keywords=001"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). careers/attorneys page embeds ADP WorkforceNow recruitment widget (workforcenow.adp.com/mascsr/.../recruitment.html?cid=ce2ebb33-...); ADP not in pollable set (JS-rendered, no clean public JSON feed i"
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Added 2026-07-20 (Am Law 200 union expansion). careers/attorneys page embeds ADP WorkforceNow recrui"
   - name: "Carlton Fields PA"
     careers_url: "https://www.carltonfields.com/careers/experienced-attorneys"
     ats_type: other
@@ -1131,10 +1131,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
   - name: "Dickinson Wright PLLC"
     careers_url: "https://www.dickinsonwright.com/careers/lateral-attorneys"
-    ats_type: flo_recruit
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://florecruit.com/api/v2/public-jobs/dickinsonwright/career-page-jobs"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers (careers?tab=4) routes US lateral-associate + post-clerkship applications to Flo Recruit (florecruit.com/v2/app/dickinsonwright/jobs); JSON board auth-gated, not pollable. Professional staff g Entry signals seen: Post-Clerkship Opportunities."
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Added 2026-07-20 (Am Law 200 union expansion). Careers (careers?tab=4) routes US lateral-associate +"
   - name: "Dinsmore & Shohl LLP"
     careers_url: "https://www.dinsmore.com/careers/attorneys/"
     ats_type: other
@@ -1179,10 +1179,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Careers pages link to ApplicantStack (hinshawlaw.applicantstack.com/x/openings). GET returns 200 with many attorney titles, but ApplicantStack is not a pollable type in the set and the page has no ld+"
   - name: "Holland & Hart LLP"
     careers_url: "https://www.hollandhart.com/careers"
-    ats_type: flo_recruit
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://florecruit.com/api/v2/public-jobs/hollandhart/career-page-jobs"
     public_entry_level: unknown
-    note: "Added 2026-07-20 (Am Law 200 union expansion). Experienced-attorney openings link out to FloRecruit (https://florecruit.com/v2/app/hollandhart/jobs?positions=1551=t&1557=t&1560=t&1564=t&1566=t&1597=t) found in raw HTML of hollandhart.com/experienc"
+    note: "RECOVERED 2026-07-20 via headless discovery (jsonapi). Added 2026-07-20 (Am Law 200 union expansion). Experienced-attorney openings link out to FloRecruit "
   - name: "Ice Miller LLP"
     careers_url: "https://www.icemiller.com/careers/lateral-attorneys/"
     ats_type: unknown

@@ -15,9 +15,11 @@ from core.http import HttpClient
 
 from .ashby import AshbyFetcher
 from .base import Fetcher
+from .browser import BrowserFetcher
 from .careerpage import CareerPageFetcher
 from .generic import GenericFetcher
 from .greenhouse import GreenhouseFetcher
+from .jsonapi import JsonApiFetcher
 from .lever import LeverFetcher
 from .radancy import RadancyFetcher
 from .smartrecruiters import SmartRecruitersFetcher
@@ -36,6 +38,8 @@ def build_registry(client: HttpClient) -> dict[str, Fetcher]:
         "virecruit": ViRecruitFetcher(client),
         "radancy": RadancyFetcher(client),
         "ashby": AshbyFetcher(client),
+        "jsonapi": JsonApiFetcher(client),
+        "browser": BrowserFetcher(client),
     }
 
 
@@ -54,6 +58,8 @@ __all__ = [
     "ViRecruitFetcher",
     "RadancyFetcher",
     "AshbyFetcher",
+    "JsonApiFetcher",
+    "BrowserFetcher",
     "build_registry",
     "get_fetcher",
 ]

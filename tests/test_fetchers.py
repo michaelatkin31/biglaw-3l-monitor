@@ -6,6 +6,7 @@ from fetchers.ashby import AshbyFetcher
 from fetchers.base import Firm
 from fetchers.careerpage import CareerPageFetcher
 from fetchers.greenhouse import GreenhouseFetcher
+from fetchers.jsonapi import JsonApiFetcher
 from fetchers.lever import LeverFetcher
 from fetchers.radancy import RadancyFetcher
 from fetchers.smartrecruiters import SmartRecruitersFetcher
@@ -290,6 +291,38 @@ def test_ashby_requires_identifier():
     firm = Firm(name="F", ats_type="ashby", ats_identifier=None)
     with pytest.raises(ValueError):
         AshbyFetcher(FakeClient({})).fetch(firm)
+
+
+def test_jsonapi_autodetects_nested_array_and_keys():
+    # nested jobs array + mixed key names (Ropes-style)
+    payload = {"total": 2, "results": [
+        {"title": "Lateral Associate (3-4 years)", "location": "New York",
+         "url": "/positions/lateral-associate-ny", "id": "r1"},
+        {"title": "Funds Attorney", "location": "Boston", "url": "/positions/funds-boston", "id": "r2"},
+    ]}
+    client = FakeClient(json_result=payload)
+    firm = Firm(name="Ropes", ats_type="jsonapi",
+                ats_identifier="https://www.ropesgrayrecruiting.com/sitecore/api/jobsearch")
+    posts = JsonApiFetcher(client).fetch(firm)
+    assert len(posts) == 2
+    assert posts[0].title == "Lateral Associate (3-4 years)"
+    assert posts[0].location == "New York"
+    assert posts[0].url == "https://www.ropesgrayrecruiting.com/positions/lateral-associate-ny"
+    assert posts[0].ats == "jsonapi"
+
+
+def test_jsonapi_ignores_non_job_json():
+    # a content/analytics payload with no title-bearing list -> error, not garbage
+    client = FakeClient(json_result={"articles": [{"headline": "News", "date": "2026"}], "settings": {}})
+    firm = Firm(name="X", ats_type="jsonapi", ats_identifier="http://x/api")
+    with pytest.raises(RuntimeError):
+        JsonApiFetcher(client).fetch(firm)
+
+
+def test_jsonapi_requires_identifier():
+    firm = Firm(name="F", ats_type="jsonapi", ats_identifier=None)
+    with pytest.raises(ValueError):
+        JsonApiFetcher(FakeClient({})).fetch(firm)
 
 
 def test_careerpage_accepts_full_url():

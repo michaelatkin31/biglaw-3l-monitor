@@ -239,6 +239,99 @@ def normalize_radancy_job(firm: str, href: str, title: str, origin: str) -> Opti
     )
 
 
+# --- Generic JSON API (auto-detecting; many custom firm career APIs) --------
+# Firms expose wildly different JSON shapes (Ropes /results, Orrick /jobs, Vedder
+# Next.js /pageProps/posts, Flo /public-jobs, ClearCompany, Paycom, UltiPro, ...).
+# We auto-locate the jobs array and map fields by key name so one fetcher covers all.
+
+_JOB_TITLE_KEYS = ("title", "jobtitle", "job_title", "positiontitle", "postingtitle", "name")
+_JOB_LOC_KEYS = ("location", "locations", "city", "office", "offices", "locationstext",
+                 "region", "joblocation", "full_location", "primarylocation", "fulllocation")
+_JOB_URL_KEYS = ("applyurl", "joburl", "apply_url", "url", "hostedurl", "absolute_url",
+                 "jobposturl", "externalpath", "link", "detailurl")
+_JOB_ID_KEYS = ("id", "jobid", "job_id", "reqid", "requisitionid", "postingid", "slug", "ref", "refnumber")
+
+
+def _first_key(item: dict, keys) -> Any:
+    lower = {k.lower(): k for k in item}
+    for want in keys:
+        if want in lower:
+            return item[lower[want]]
+    return None
+
+
+def _stringify_loc(v: Any) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, str):
+        return clean_text(v)
+    if isinstance(v, dict):
+        for k in ("name", "city", "label", "fullLocation", "displayName", "text"):
+            if v.get(k):
+                return clean_text(v[k])
+        return clean_text(", ".join(str(x) for x in v.values() if isinstance(x, (str, int))))
+    if isinstance(v, list):
+        return ", ".join(filter(None, (_stringify_loc(x) for x in v)))[:120]
+    return clean_text(str(v))
+
+
+def find_job_array(data: Any, depth: int = 0):
+    """Walk arbitrary JSON to find a list of job dicts (title + a location/url/id)."""
+    if depth > 8:
+        return None
+    if isinstance(data, list) and data and isinstance(data[0], dict):
+        it = data[0]
+        if "data" in {k.lower() for k in it} and isinstance(_first_key(it, ("data",)), dict):
+            inner = _first_key(it, ("data",))
+            if _first_key(inner, _JOB_TITLE_KEYS):
+                return [d.get("data", d) for d in data if isinstance(d, dict)]
+        if _first_key(it, _JOB_TITLE_KEYS) and (
+            _first_key(it, _JOB_LOC_KEYS) is not None
+            or _first_key(it, _JOB_URL_KEYS) is not None
+            or _first_key(it, _JOB_ID_KEYS) is not None
+        ):
+            return data
+    if isinstance(data, dict):
+        for v in data.values():
+            r = find_job_array(v, depth + 1)
+            if r:
+                return r
+    if isinstance(data, list):
+        for x in data[:4]:
+            r = find_job_array(x, depth + 1)
+            if r:
+                return r
+    return None
+
+
+def normalize_jsonapi_item(firm: str, item: dict, base_url: str) -> Optional[Posting]:
+    title = clean_text(_first_key(item, _JOB_TITLE_KEYS))
+    if not title:
+        return None
+    location = _stringify_loc(_first_key(item, _JOB_LOC_KEYS))
+    raw_url = _first_key(item, _JOB_URL_KEYS)
+    url = ""
+    if isinstance(raw_url, str) and raw_url:
+        url = raw_url if raw_url.startswith("http") else _join_url(base_url, raw_url)
+    jid = _first_key(item, _JOB_ID_KEYS)
+    job_id = clean_text(jid) if jid not in (None, "") else (url or f"{firm}:{title}")
+    return Posting(
+        firm=firm,
+        job_id=job_id,
+        title=title,
+        location=location,
+        url=url or base_url,
+        ats="jsonapi",
+        posted_date=clean_text(_first_key(item, ("posteddate", "posted_date", "datePosted",
+                                                 "createdat", "publishedat", "postedon"))) or None,
+    )
+
+
+def _join_url(base: str, path: str) -> str:
+    from urllib.parse import urljoin
+    return urljoin(base, path)
+
+
 # --- Generic (schema.org JobPosting JSON-LD) -------------------------------
 
 
