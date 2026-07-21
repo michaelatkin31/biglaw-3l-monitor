@@ -51,31 +51,31 @@ The pipeline per run:
 
 ## Coverage: what actually gets polled
 
-`firms.yaml` ships with **75 firms** (the best-effort Vault-100 ∩ Am-Law-200
-intersection) **classified by ATS**. As of 2026-07-20 the classification of every
-firm was **live-verified** (each careers page fetched, each candidate JSON/HTML
-endpoint hit, each board's job titles inspected for real attorney roles).
+`firms.yaml` ships with **198 firms** — the **union of the Vault Law 100 and the
+Am Law 200** (expanded 2026-07-20 from the earlier ~75-firm intersection).
+Every firm's ATS was **live-verified** (careers page fetched, candidate JSON/HTML
+endpoint hit, board titles inspected for real attorney roles vs the staff-board trap).
 
-Eight ATS backends have working fetchers, so the monitor actively polls
-**40 firms**:
+Nine ATS backends have working fetchers, so the monitor actively polls
+**85 firms** (up from ~22 originally):
 
-- **23 Workday** — Skadden, Simpson Thacher, Weil, Cooley, Dechert, King &
-  Spalding, Fenwick, Goodwin, McDermott, Hogan Lovells, Norton Rose Fulbright,
-  DLA Piper, Alston & Bird, Morgan Lewis, Holland & Knight, Munger Tolles,
-  Perkins Coie, Wilson Sonsini, Gunderson, Troutman, **Greenberg Traurig**,
-  **Pillsbury**, **HSF Kramer** — all with `workday_host` pinned.
-- **12 viRecruit** (`vi by Aderant`) — **Cleary, Jones Day, O'Melveny, Milbank,
-  Boies Schiller, Akin Gump, Baker Botts, Jenner & Block, Foley, Fish &
-  Richardson, Mintz, Cadwalader**. vi's *Apply* step is login-gated, but the
-  **listing page is public HTML** (`viRecruitSelfApply/RecDefault.aspx`), which the
-  `virecruit` fetcher parses. This is how much of the top tier is reached.
-- **2 Greenhouse** — Fried Frank, **Hughes Hubbard** (genuine attorney boards).
-  *(Gibson Dunn's `gibsondunn` board was the staff-board trap and moved to `other`.)*
-- **1 career.page** — **Morrison & Foerster** (iCIMS-backed but exposes clean JSON
-  at `mofo.career.page/api/jobs`; one of the few firms that *publicly* posts
-  entry-level roles, e.g. "2026 Post-Clerkship Associate Attorney").
-- **1 SmartRecruiters** — **Crowell & Moring**.
-- **1 Radancy/TalentBrew** — **A&O Shearman** (server-rendered HTML, plain HTTP).
+- **48 viRecruit** (`vi by Aderant`) — the biggest source of coverage. vi's *Apply*
+  step is login-gated, but the **listing page is public HTML**
+  (`viRecruitSelfApply/RecDefault.aspx` or `ReDefault.aspx`), which the `virecruit`
+  fetcher parses. Spans the top tier (Cleary, Jones Day, O'Melveny, Milbank, Boies
+  Schiller, Akin Gump…) and much of the Am Law tail (Faegre Drinker, Littler,
+  Cozen, Duane Morris, Foley, Fox Rothschild, Akerman…).
+- **28 Workday** — Skadden, Simpson Thacher, Cooley, McDermott, Hogan Lovells,
+  DLA Piper, Perkins Coie, Greenberg Traurig, Pillsbury, HSF Kramer, Jackson
+  Lewis, Fragomen, … (all with `workday_host` pinned).
+- **3 Greenhouse** (Fried Frank, Hughes Hubbard, …) · **2 career.page** (Jibe —
+  Morrison & Foerster, Ogletree) · **1 Ashby** (Barnes & Thornburg) ·
+  **1 SmartRecruiters** (Crowell & Moring) · **1 Radancy** (A&O Shearman) ·
+  **1 generic** JSON-LD.
+
+The Am Law tail (ranks ~50-200) leans far more on these pollable ATSs — and posts
+entry-level / 2L-summer roles publicly — much more than the gated elite core, so
+the union expansion roughly **doubled** genuine coverage.
 
 The remaining ~35 firms have **no pollable endpoint**: `viglobal`/self-hosted
 viRecruit behind Cloudflare or broken TLS (Kirkland, Paul Hastings, Willkie),
