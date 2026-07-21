@@ -42,6 +42,14 @@ class PostingFilter:
         self.include_regexes = [
             re.compile(p, re.IGNORECASE) for p in filter_cfg.get("include_regexes", [])
         ]
+        # Regexes that mark a role as clearly NOT entry-level (e.g. an explicit
+        # years-of-experience requirement). These fire like an exclude, EXCEPT when
+        # the title also carries a confident entry signal (see entry_signal_keywords),
+        # which always wins -- so "Entry-Level Associate (0-2 years)" still matches.
+        self.exclude_regexes = [
+            re.compile(p, re.IGNORECASE) for p in filter_cfg.get("exclude_regexes", [])
+        ]
+        self.entry_signals = [k.lower() for k in filter_cfg.get("entry_signal_keywords", [])]
         # Search title by default; optionally fold in location/other fields.
         self.search_fields = filter_cfg.get("search_fields", ["title"])
 
@@ -90,6 +98,19 @@ class PostingFilter:
         for kw in self.exclude_keywords:
             if self._kw_hit(kw, text):
                 return FilterDecision(False, f"excluded by keyword: {kw!r}")
+
+        # A confident entry signal ("entry-level", "first-year", "class of 2026",
+        # a class-year regex, ...) overrides the experience-based excludes below.
+        has_entry_signal = any(self._kw_hit(k, text) for k in self.entry_signals) or any(
+            rx.search(text) for rx in self.include_regexes
+        )
+        # Experience-based excludes: a title stating years of experience / an
+        # ordinal year (2nd+) is definitionally not entry-level. Recall-safe --
+        # ambiguous "Corporate Associate" (no experience stated) still passes.
+        if not has_entry_signal:
+            for rx in self.exclude_regexes:
+                if rx.search(text):
+                    return FilterDecision(False, f"excluded by regex: {rx.pattern!r}")
 
         # US-only geo gate: drop clearly-foreign postings before include matching
         # so a recall-first keyword net doesn't surface London/Milan/Singapore

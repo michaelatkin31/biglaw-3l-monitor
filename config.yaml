@@ -59,6 +59,35 @@ filters:
     - "judicial clerk"
     - "clerkship"
 
+  # A confident entry signal here OVERRIDES the experience-based exclude_regexes
+  # below (so e.g. "Entry-Level Associate (0-2 years)" is kept, not dropped).
+  entry_signal_keywords:
+    - "entry-level"
+    - "entry level"
+    - "first-year"
+    - "first year"
+    - "1st year"
+    - "new grad"
+    - "new graduate"
+    - "incoming associate"
+    - "3l"
+    - "judicial clerk"
+
+  # ANY of these => EXCLUDE (a role that states experience is not entry-level).
+  # These are the "obviously not a new grad" signals; ambiguous titles with no
+  # experience stated (a bare "Corporate Associate") are still kept for recall.
+  # Patterns avoid matching the upper bound of a low range ("0-2 years") and keep
+  # "first-year"/"1st year".
+  exclude_regexes:
+    - '(?<![\d\-–—])[2-9]\d*\s*[-–—]\s*\d+\s*(?:years?|yrs?|pqe)'   # "3-5 years", "3–5 PQE"
+    - '(?<![\d\-–—])[2-9]\d*\s*\+\s*(?:years?|yrs?|pqe)'            # "5+ years"
+    - '(?:at least|minimum|min\.?\s*of|min\.?|with|least)\s+[2-9]\d*\s*(?:years?|yrs?)'  # "at least 3 years"
+    - '\b[2-9]\d*\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience|exp)\b'  # "3 years of experience"
+    - '\byears?\s+of\s+(?:relevant\s+)?experience\b'               # generic "years of experience"
+    - '(?<![\d\-–—])[2-9]\d*\s*\+?\s*pqe\b'                         # "3 PQE", "5+ PQE"
+    - '\b(?:2nd|3rd|4th|5th|6th|7th|8th|second|third|fourth|fifth|sixth|seventh|eighth)[\s-]*year\b'  # 2nd+ year
+    - '\bmid[\s-]?senior\b'                                         # "mid-senior level"
+
   # ANY of these regexes => candidate include (class-year / junior phrasings the
   # bare keywords might miss in unusual word order).
   include_regexes:

@@ -100,6 +100,28 @@ def test_us_only_can_be_disabled():
     assert f.decide(_p("Corporate Associate", "London, United Kingdom")).matched
 
 
+def test_experience_stated_roles_excluded():
+    # A stated years-of-experience requirement is definitionally not entry-level.
+    f = _filter()
+    assert not f.decide(_p("Associate (3 - 5 years)")).matched
+    assert not f.decide(_p("Lateral Associate (3-4 years)")).matched
+    assert not f.decide(_p("Disputes Associate (3-5 PQE)")).matched
+    assert not f.decide(_p("Litigation Associate, 5+ years")).matched
+    assert not f.decide(_p("Associate with at least 3 years of experience")).matched
+    assert not f.decide(_p("Associate (Litigation 4th-5th Year)")).matched
+
+
+def test_experience_exclusion_is_recall_safe():
+    f = _filter()
+    # ambiguous (no experience stated) -> still kept
+    assert f.decide(_p("Corporate Associate")).matched
+    # low ranges / entry signals win over the experience exclude
+    assert f.decide(_p("Entry-Level Associate (0-2 years)")).matched
+    assert f.decide(_p("Associate (0-2 years)")).matched      # range starts at 0
+    assert f.decide(_p("First-Year Associate")).matched
+    assert f.decide(_p("2026 Associate")).matched
+
+
 def test_apply_returns_only_matches():
     f = _filter()
     postings = [
