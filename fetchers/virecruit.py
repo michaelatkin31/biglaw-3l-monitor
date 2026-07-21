@@ -35,8 +35,15 @@ from .base import Fetcher, Firm
 
 log = logging.getLogger(__name__)
 
+# vi renders the job list in one of two containers depending on the product
+# variant: RecDefault.aspx uses <table id="...gridviewList"> (rows carry the
+# labeled <h5>Office/Practice Area/Date Posted <span> fields); the older
+# ReDefault.aspx / viDesktop uses <table id="...dataGridMain"> (title-only <h4>
+# rows, no <h5> location -- location comes out blank, which the US geo gate
+# treats as ambiguous and keeps).
 _TABLE = re.compile(
-    r'<table[^>]*id="[^"]*gridviewList[^"]*"[^>]*>(.*?)</table>', re.S | re.I
+    r'<table[^>]*id="[^"]*(?:gridviewList|dataGridMain)[^"]*"[^>]*>(.*?)</table>',
+    re.S | re.I,
 )
 _ROW = re.compile(r"<tr[^>]*>(.*?)</tr>", re.S | re.I)
 _H4 = re.compile(r"<h4[^>]*>(.*?)</h4>", re.S | re.I)

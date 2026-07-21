@@ -1,23 +1,24 @@
 # BigLaw entry-level associate job-posting monitor — firm dataset
 # METHOD: every firm's ATS was LIVE-VERIFIED on 2026-07-20 (careers page fetched,
 # candidate JSON/HTML endpoint hit, board titles inspected for real attorney roles
-# vs the staff-board trap). The set is the high-confidence Vault-100 ∩ Am-Law-200
-# intersection CORE (~75 firms), not the full ~85-95 — the Vault tail is paywalled.
+# vs the staff-board trap). The set is the UNION of the Vault Law 100 and the Am
+# Law 200 (expanded 2026-07-20 from the earlier Vault∩AmLaw intersection core).
 #
-# WHAT ACTUALLY FETCHES (~39 of 75 firms): ats_type in
-#   workday | greenhouse | lever | generic | careerpage | smartrecruiters | virecruit
+# WHAT ACTUALLY FETCHES: ats_type in
+#   workday | greenhouse | lever | generic | careerpage | smartrecruiters | virecruit | radancy | ashby
 # has a live fetcher and is polled. The virecruit fetcher parses the PUBLIC
-# self-apply listing HTML (RecDefault.aspx GridView) used by many top-tier firms
-# (S&C-style vi by Aderant) — the listing is public even though Apply is login-gated.
-# The rest (flo_recruit auth-gated JSON, viglobal/iCIMS/Taleo/LawCruit/Avature,
-# Cloudflare-gated Workday tenants, or email-only) have NO pollable endpoint and are
-# SKIPPED at runtime (never crash). Two firms (Wachtell, Proskauer) DO expose a
-# public API but it is a staff-only board with zero attorneys, so they stay skipped.
+# self-apply listing HTML (RecDefault/ReDefault.aspx GridView) used by a large
+# share of firms (vi by Aderant) — the listing is public even though Apply is
+# login-gated; this is the single biggest source of coverage. The rest
+# (flo_recruit, viglobal/iCIMS/Taleo/LawCruit/Avature, Cloudflare/TLS-blocked
+# hosts, or email-only) have NO pollable endpoint and are SKIPPED (never crash).
+# Some firms expose a public API that is a staff-only board with zero attorneys
+# (Wachtell, Proskauer) — kept skipped.
 #
-# COVERAGE CEILING: most BigLaw *entry-level* hiring still runs through OCI / 2L
-# summer programs / judicial clerkships (OSCAR), which are recruiting processes, not
-# job postings — so even full ATS coverage cannot surface them. Treat this as one
-# signal. Re-verify with `python classify.py`. See README.md and DECISIONS.md.
+# The Am Law tail (ranks ~50-200) leans much more on pollable ATSs (esp. viRecruit,
+# Ashby, Workday) and posts entry-level/2L-summer roles publicly far more than the
+# elite core, so the union expansion materially raises genuine coverage.
+# Re-verify with `python classify.py`. See README.md and DECISIONS.md.
 
 sources:
   vault_100:
@@ -533,6 +534,528 @@ firms:
 # Freshfields (ATS: Workday freshfields/FBD_101), Clifford Chance (ATS: unknown,
 #   jobs.cliffordchance.com), Linklaters: London-HQ Magic Circle, in the Global 200,
 #   generally NOT in the Am Law 200. Excluded. A&O Shearman kept but flagged above.
+
+  - name: "Adams and Reese"
+    careers_url: "https://www.adamsandreese.com/careers/attorneys"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Attorney openings listed on the page (~13 positions across Tampa/Nashville/Memphis/Jackson/Houston/Sarasota) but each 'Apply Now' points to a Smartsheet form (app.smartsheet.com/b/form/a3bc52a671494a8"
+  - name: "Akerman"
+    careers_url: "https://www.akerman.com/en/people/careers.html"
+    ats_type: virecruit
+    ats_identifier: "https://selfapply.akerman.com/viRecruitSelfApply/ReDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit. Entry signals seen: 2027 Summer Associate Program - Litigation Practice Group."
+  - name: "ArentFox Schiff"
+    careers_url: "https://www.afslaw.com/careers/attorney-opportunities"
+    ats_type: virecruit
+    ats_identifier: "https://arentfoxschiffselfapply.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx?FilterREID=2"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "BakerHostetler"
+    careers_url: "https://www.bakerlaw.com/careers/"
+    ats_type: virecruit
+    ats_identifier: "https://bakerhostetlerselfapply.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Barclay Damon"
+    careers_url: "https://www.barclaydamon.com/careers/lateral-partner-recruiting"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Firm-hosted /careers/{slug} server-rendered pages, no named ATS and no ld+json JobPosting found — not API-pollable"
+  - name: "Barnes & Thornburg"
+    careers_url: "https://btlaw.com/en/careers"
+    ats_type: ashby
+    ats_identifier: "barnes"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified ashby. Entry signals seen: 2027 2L Summer Associate; Entry Level Patent Agent/Technical Specialist."
+  - name: "Blank Rome"
+    careers_url: "https://www.blankrome.com/careers"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). unknown; not pollable."
+  - name: "Bond, Schoeneck & King"
+    careers_url: "https://www.bsk.com/careers/current-opportunities"
+    ats_type: generic
+    ats_identifier: "https://www.bsk.com/careers/current-opportunities"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified generic. Entry signals seen: 2027 (2L) Summer Law Clerk."
+  - name: "Bowman and Brooke"
+    careers_url: "https://www.bowmanandbrooke.com/careerssection/careers/attorney-career-opportunities"
+    ats_type: workable
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Workable (acct bowman-and-brooke). POST to apply.workable.com/api/v3/accounts/bowman-and-brooke/jobs returns HTTP 200 with 10 postings; ~6 are attorney/associate roles (rest paralegal/legal-admin), so"
+  - name: "Bryan Cave Leighton Paisner"
+    careers_url: "https://www.bclplaw.com/en-US/careers.html"
+    ats_type: virecruit
+    ats_identifier: "https://bclplaw-careers.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Buchalter"
+    careers_url: "https://www.buchalter.com/careers/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page shows no job listings and no ATS/iframe/job-board link; recruiting handled via Recruiting Manager contact (email-only). No pollable endpoint. Direct curl was Cloudflare 403; WebFetch of t"
+  - name: "Choate, Hall & Stewart"
+    careers_url: "https://www.choate.com/careers/lateral-attorneys-and-patent-practitioners/"
+    ats_type: virecruit
+    ats_identifier: "https://talent.choate.com/viRecruitSelfApply/RecDefault.aspx?FilterREID=4"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Clifford Chance US"
+    careers_url: "https://jobs.cliffordchance.com/experienced-lawyers-us"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Custom careers portal on jobs.cliffordchance.com backed by Smartr (smartr.me); /jobs?options= search UI, no public pollable API and no ld+json JobPosting"
+  - name: "Cozen O'Connor"
+    careers_url: "https://www.cozen.com/careers"
+    ats_type: virecruit
+    ats_identifier: "https://cozencareers.viglobalcloud.com/viRecruitSelfApply/ReDefault.aspx?FilterREID=27&FilterJobCategoryID=2"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit. Entry signals seen: 2026 Entry Level Position."
+  - name: "Davis Wright Tremaine"
+    careers_url: "https://www.dwt.com/careers"
+    ats_type: virecruit
+    ats_identifier: "https://selfapply.dwt.com/viSelfApply/viRecruitSelfApply/RecDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Duane Morris"
+    careers_url: "https://selfapply.duanemorris.com/viselfapply/viRecruitSelfApply/RecDefault.aspx"
+    ats_type: virecruit
+    ats_identifier: "https://selfapply.duanemorris.com/viselfapply/viRecruitSelfApply/RecDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Eversheds Sutherland (US)"
+    careers_url: "https://www.eversheds-sutherland.com/en/united-states/careers"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). unknown; not pollable."
+  - name: "Faegre Drinker Biddle & Reath"
+    careers_url: "https://www.faegredrinker.com/en/careers/experienced-lawyers"
+    ats_type: virecruit
+    ats_identifier: "https://apply.faegredrinker.com/virecruitselfapply/RecDefault.aspx?FilterREID=4"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Fennemore Craig"
+    careers_url: "https://www.fennemorelaw.com/careers/attorneys/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Lawcruit/MicronApps (lawcruit.micronapps.com, lawfirm=194) online application linked from attorney careers page; gated ASP form, not pollable"
+  - name: "Fox Rothschild"
+    careers_url: "https://www.foxrothschild.com/careers-for-attorneys/open-positions"
+    ats_type: virecruit
+    ats_identifier: "https://frselfapply.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Fragomen, Del Rey, Bernsen & Loewy"
+    careers_url: "https://www.fragomen.com/careers"
+    ats_type: workday
+    ats_identifier: "fragomen/FragomenCareers"
+    workday_host: fragomen.wd115.myworkdayjobs.com
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified workday."
+  - name: "Godfrey & Kahn"
+    careers_url: "https://gklawcareers.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    ats_type: virecruit
+    ats_identifier: "https://gklawcareers.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Gordon Rees Scully Mansukhani"
+    careers_url: "https://www.grsm.com/careers"
+    ats_type: icims
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
+  - name: "Harter Secrest & Emery"
+    careers_url: "https://hselaw.com/careers/lateral-attorney/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Openings listed on hselaw.com/current-lateral-openings but Apply routes to Lawcruit (lawcruit.micronapps.com); gated, not pollable"
+  - name: "Haynes and Boone"
+    careers_url: "https://www.haynesboone.com/careers/experienced-lawyers"
+    ats_type: virecruit
+    ats_identifier: "https://recruiting.haynesboone.com/SelfApply/viRecruitSelfApply/ReDefault.aspx?FilterREID=15&FilterJobCategoryID=13"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit. Entry signals seen: Real Estate Finance Junior Associate."
+  - name: "Hodgson Russ"
+    careers_url: "https://www.hodgsonruss.com/careers/attorneys"
+    ats_type: flo_recruit
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). FloRecruit portal at florecruit.com/v2/app/hodgsonruss/jobs linked from attorney careers page; JSON auth-gated, not pollable"
+  - name: "Hunton Andrews Kurth"
+    careers_url: "https://www.hunton.com/careers/lateral-attorneys"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). server-rendered /careers/job-{slug} links; not a named ATS Entry signals seen: New York Entry-Level Capital Markets Associate; New York Entry-Level Global Privacy and Cybersecurity Associate."
+  - name: "Husch Blackwell"
+    careers_url: "https://legalcareers.huschblackwell.com/viRecruitSelfApply/RecDefault.aspx"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "viRecruit host is unreachable/blocked (404) from CI+local 2026-07-20; kept 'other'. Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Jackson Lewis"
+    careers_url: ""
+    ats_type: workday
+    ats_identifier: "jacksonlewis/JacksonLewisLawyerCareers"
+    workday_host: jacksonlewis.wd1.myworkdayjobs.com
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified workday."
+  - name: "Kean Miller"
+    careers_url: "https://www.keanmiller.com/careers/jobs/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). No third-party ATS; applications route through a Monday.com form (forms.monday.com/forms/3d08c4075ada24eb8d91e9d66627b98e). Careers organized into Partners/Associates/Staff/Summer Associates category "
+  - name: "Kilpatrick Townsend & Stockton"
+    careers_url: "https://kilpatrickrecruits.com/open-positions/"
+    ats_type: icims
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
+  - name: "Lewis Brisbois Bisgaard & Smith"
+    careers_url: "https://www.lewisbrisbois.com/careers"
+    ats_type: icims
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
+  - name: "Linklaters"
+    careers_url: "https://careers.linklaters.com/en-us/experienced-lawyers"
+    ats_type: workday
+    ats_identifier: "linklaters/Linklaters"
+    workday_host: linklaters.wd3.myworkdayjobs.com
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified workday. Entry signals seen: Referendar / wissenschaftlicher Mitarbeiter (m/w/d) Steuerrecht München; Referendar/Wissenschaftlicher Mitarbeiter (m/w/."
+  - name: "Littler Mendelson"
+    careers_url: ""
+    ats_type: virecruit
+    ats_identifier: "https://videsktop.littler.com/viRecruitSelfApply/RecDefault.aspx?FilterREID=4&FilterJobCategoryID=3"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Miller Nash"
+    careers_url: "https://www.millernash.com/current-opportunities"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). No third-party ATS; each attorney opening is its own static page on millernash.com and application is email-only (MNRecruiting@millernash.com). Curl 200 with 0 JobPosting ld+json (titles only as in-pa"
+  - name: "Nelson Mullins Riley & Scarborough"
+    careers_url: "https://www.nelsonmullins.com/careers"
+    ats_type: icims
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
+  - name: "Nixon Peabody"
+    careers_url: "https://www.nixonpeabody.com/careers"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). other; not pollable."
+  - name: "Ogletree, Deakins, Nash, Smoak & Stewart"
+    careers_url: ""
+    ats_type: careerpage
+    ats_identifier: "https://careers.ogletree.com/api/jobs"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified careerpage. Entry signals seen: 2027 2L Summer Associate (Seattle, WA)."
+  - name: "Polsinelli"
+    careers_url: "https://www.polsinelli.com/careers"
+    ats_type: virecruit
+    ats_identifier: "https://virecruitex.polsinelli.com/viRecruitSelfApply/RecDefault.aspx?FilterREID=3"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Schwabe, Williamson & Wyatt"
+    careers_url: "https://www.schwabe.com/about-schwabe/careers/attorneys/"
+    ats_type: virecruit
+    ats_identifier: "http://gateway.schwabe.com/viDesktopEx/viRecruitSelfApply/ReDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Seyfarth Shaw"
+    careers_url: "https://www.seyfarth.com/careers.html"
+    ats_type: icims
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
+  - name: "Shook, Hardy & Bacon"
+    careers_url: ""
+    ats_type: virecruit
+    ats_identifier: "https://secure.shb.com/legalapply/virecruitselfapply/redefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Snell & Wilmer"
+    careers_url: ""
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). other; not pollable."
+  - name: "Spencer Fane"
+    careers_url: "https://www.spencerfane.com/careers/"
+    ats_type: virecruit
+    ats_identifier: "https://spencerfanecareers.viglobalcloud.com/viRecruitSelfApply/ReDefault.aspx?FilterREID=3"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Steptoe"
+    careers_url: "https://www.steptoe.com/en/careers/index.html"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). viRecruit but Azure-AD auth-gated"
+  - name: "Steptoe & Johnson PLLC"
+    careers_url: "https://www.steptoe-johnson.com/careers/attorneys/"
+    ats_type: virecruit
+    ats_identifier: "https://sjselfapply.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx?FilterREID=3"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Stevens & Lee"
+    careers_url: "https://www.stevenslee.com/careers/experienced-attorneys/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Email-only application (jobs@stevenslee.com); openings listed on firm page, no ATS/no pollable endpoint"
+  - name: "Stradley Ronon Stevens & Young"
+    careers_url: "https://www.stradley.com/careers"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page behind Cloudflare ('Just a moment' interstitial) — returns HTTP 403 to WebFetch and curl; could not read ATS or openings"
+  - name: "Taft Stettinius & Hollister"
+    careers_url: "https://www.taftlaw.com/careers"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). self-hosted /careers/{slug} html links, ~60 attorney jobs"
+  - name: "Tucker Ellis"
+    careers_url: "https://www.tuckerellis.com/careers/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). HubSpot CTA (portalId=5108434) redirects to ADP WorkforceNow recruitment (cid=bfffd5ca-fa7e-4101-ba1a-f03511335b81); Attorneys CTA present but ADP board not in pollable set"
+  - name: "Venable"
+    careers_url: "https://www.venable.com/careers/attorneys"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). unknown; not pollable."
+  - name: "White and Williams"
+    careers_url: "https://www.whiteandwilliams.com/careers-employment"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Email-only (recruiting@whiteandwilliams.com); careers-employment page is JS/SPA with no named ATS and no visible openings list"
+  - name: "Williams Mullen"
+    careers_url: "https://www.williamsmullen.com/careers/experienced-lawyers"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). No ATS and no job listings on the experienced-lawyers page; single 'Submit Your Resume' CTA to https://www.williamsmullen.com/lateral-inquiry form + recruiting-director email. Curl 200 with 0 JobPosti"
+  - name: "Wilson Elser Moskowitz Edelman & Dicker"
+    careers_url: "https://www.wilsonelser.com/careers-attorneys/current-opportunities"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). other; not pollable."
+  - name: "Womble Bond Dickinson (US)"
+    careers_url: "https://www.womblebonddickinson.com/us/careers/current-us-job-openings"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). unknown; not pollable."
+
+  - name: "Best Best & Krieger"
+    careers_url: "https://www.bbklaw.com/careers"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers 'View all our job openings' links to Paycom ATS (paycomonline.net/v4/ats, clientkey=8CD10E39...); Paycom not in pollable set, board covers attorneys+staff"
+  - name: "Calfee, Halter & Griswold"
+    careers_url: "https://www.calfee.com/careers-lateral-attorneys"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). careers-current-opportunities is an overview page with no job board and no named ATS; legal openings handled by direct email (CMarten@calfee.com) — not pollable"
+  - name: "Constangy, Brooks, Smith & Prophete"
+    careers_url: "https://recruiting.paylocity.com/recruiting/jobs/All/5891a570-914e-49d2-b838-fa3902426c13/Constangy-Brooks-Smith-Prophete-LLP-ATTY"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers link is a Paylocity recruiting job board (recruiting.paylocity.com, board slug ...-ATTY, attorney-specific). Board is a JS app that renders only a browser-compat warning to bots; Paylocity is "
+  - name: "Eckert Seamans Cherin & Mellott"
+    careers_url: "https://www.eckertseamans.com/our-firm/careers/lawyers"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). 'Current Openings' on /careers/lawyers routes to ADP WorkforceNow recruitment (cid=67f32c2f-5b03-40de-821f-755e92338e2f); ADP board not in pollable set"
+  - name: "Freeman Mathis & Gary"
+    careers_url: "https://www.fmglaw.com/careers/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Firm-hosted /careers/{slug} job pages; ld+json is only WebSite/Organization schema (no JobPosting), no named ATS — not API-pollable"
+  - name: "Freshfields US"
+    careers_url: "https://www.freshfields.com/en/your-career/united-states/experienced-lawyers"
+    ats_type: workday
+    ats_identifier: "freshfields/FBD_101"
+    workday_host: freshfields.wd3.myworkdayjobs.com
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified workday. Entry signals seen: Anwältin sucht Referendarin 2027: Unser Mentoringprogramm für Referendarinnen; Referendare (m/w/x) - Corporate."
+  - name: "Goldberg Segalla"
+    careers_url: "https://www.goldbergsegalla.com/our-story/career-opportunities-at-goldberg-segalla/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page directs lateral attorney applicants to a Smartsheet intake form (app.smartsheet.com/b/form/...); no named ATS, no job listing, not pollable"
+  - name: "Goulston & Storrs"
+    careers_url: "https://www.goulstonstorrs.com/careers/legal-professional"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page is a narrative culture page with no job board, no ATS link/iframe, and no openings subpage. Directs candidates to Chief Legal Talent Officer (kfebeo@goulstonstorrs.com). 'lever' string ma"
+  - name: "Herrick, Feinstein"
+    careers_url: "https://www.herrick.com/careers/current-openings/"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). herrick.com/careers/current-openings returns HTTP 403 to both WebFetch and curl (bot protection); could not read ATS or openings"
+  - name: "Hinckley, Allen & Snyder"
+    careers_url: "https://www.hinckleyallen.com/careers/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "viRecruit host is unreachable/blocked (404) from CI+local 2026-07-20; kept 'other'. Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Kaufman Dolowich"
+    careers_url: "https://careers-kdvlaw.icims.com/"
+    ats_type: icims
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers URL is careers-kdvlaw.icims.com (iCIMS). Job search HTML returned 200 and references attorney roles, but iCIMS is auth/portal-gated with no open public JSON API per spec. Not pollable."
+  - name: "Kelley Drye & Warren"
+    careers_url: "https://www.kelleydrye.com/careers/attorney-opportunities"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Adobe Experience Manager careers site with JS 'Advanced Search' at /careers/attorney-opportunities?careerType=Attorney#attorneysearch; no named ATS, no ld+json JobPosting, no pollable API found"
+  - name: "Lewis Rice"
+    careers_url: "https://www.lewisrice.com/careers-at-lewis-rice/attorneys"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Attorney 'Current Opportunities' routes to Paycor (recruitingbypaycor.com, clientId 8a7883d094b427e80194b8e9140400d6); summer associates apply via FloRecruit (florecruit.com/v2/app/lewisrice). Neither Entry signals seen: Summer Associate Program."
+  - name: "Marshall, Gerstein & Borun"
+    careers_url: "https://www.marshallip.com/careers/"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page behind Cloudflare 'Just a moment' interstitial (_cf_chl_opt / challenge-platform); could not read ATS or openings"
+  - name: "McDonald Hopkins"
+    careers_url: "https://www.mcdonaldhopkins.com/careers/attorneys"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Attorneys page lists 6 real attorney openings as CMS pages with no ATS, no iframe, and no ld+json JobPosting feed. Application is manual via email to Director of Recruiting (aripich@mcdonaldhopkins.co Entry signals seen: West Palm Beach Litigation Summer Associate 2027."
+  - name: "Michael Best & Friedrich"
+    careers_url: "https://www.michaelbest.com/Careers"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page behind 'Vercel Security Checkpoint' bot challenge — returns HTTP 429 to WebFetch and curl (any UA/headers); could not read ATS or openings"
+  - name: "Miles & Stockbridge"
+    careers_url: "https://www.milesstockbridge.com/careers"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). milesstockbridge.com refuses connections from datacenter IPs (ECONNREFUSED / HTTP 000 to both WebFetch and curl); could not read careers page or ATS"
+  - name: "Miller, Canfield, Paddock and Stone"
+    careers_url: "https://www.millercanfield.com/careers-lawyers.html"
+    ats_type: virecruit
+    ats_identifier: "https://millercanfieldselfapply.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx?FilterREID=2"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit. Entry signals seen: Litigation Associate, Michigan or Ohio (4th year); Litigation Associate, Michigan or Ohio (5th year)."
+  - name: "Nossaman"
+    careers_url: "https://www.nossaman.com/careers-laterals-judicial-clerks"
+    ats_type: virecruit
+    ats_identifier: "https://nossamanlaw-recruiting.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx?FilterREID=4"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Nutter McClennen & Fish"
+    careers_url: "https://www.nutter.com/careers-lateral"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Lateral page shows no public job board or listings; only a Lawcruit/micronapps search-firm submission form (lawcruit.micronapps.com/sup/...?lawfirm=158) which is gated and not a candidate-facing board"
+  - name: "Parker Poe Adams & Bernstein"
+    careers_url: "https://www.parkerpoe.com/careers"
+    ats_type: flo_recruit
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Attorney openings subpage lists real attorney jobs whose Apply links go to florecruit.com/v2/app/parkerpoe/jobs/... (flo_recruit, auth-gated JSON). One role and the general application also route to D"
+  - name: "Phelps Dunbar"
+    careers_url: "https://www.phelps.com/careers"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page 'Apply' links to Lawcruit/MicronApps (lawcruit.micronapps.com/sup/JobPosting.aspx); gated ASP application, not pollable"
+  - name: "Phillips Lytle"
+    careers_url: "https://phillipslytle.com/careers/laterals/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Lateral attorney 'Go To Careers Site' links to Paycom ATS (portal FEC93F2871BFAB621B447FCEFBA07D5F); Paycom not in pollable set (board showed 'No Result Found' at fetch time)"
+  - name: "Reinhart Boerner Van Deuren"
+    careers_url: "https://reinhartselfapply.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    ats_type: virecruit
+    ats_identifier: "https://reinhartselfapply.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
+  - name: "Rivkin Radler"
+    careers_url: "https://www.rivkinradler.com/careers/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page routes to Ceridian Dayforce candidate portal (dayforcehcm.com/CandidatePortal/en-US/rivkin, HTTP 302); Dayforce not in pollable set"
+  - name: "Robins Kaplan"
+    careers_url: "https://www.robinskaplan.com/careers"
+    ats_type: virecruit
+    ats_identifier: "https://RobinsKaplan-Apply.viglobalcloud.com/viRecruitSelfApply/RecDefault.aspx?FilterREID=4"
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit. Entry signals seen: New York – Jonathan W. Cuneo COSAL/Justice Catalyst Fellowship."
+  - name: "Robinson, Bradshaw & Hinson"
+    careers_url: "https://www.rbh-law.com/careers/"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers and experienced-attorneys/law-students subpages are narrative-only with no job board, no ATS link/iframe, and no ld+json JobPosting. (Domain is robinsonbradshaw.com; the provided rbh-law.com d"
+  - name: "Seward & Kissel"
+    careers_url: "https://www.sewkis.com/join-us/"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Openings listed on sewkis.com/attorneys under 'Opportunities' linking to internal /job-posts/ pages; no named ATS, no ld+json JobPosting, application via recruiting@sewkis.com — not API-pollable"
+  - name: "Sullivan & Worcester"
+    careers_url: "https://www.sullivanlaw.com/careers"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page behind Cloudflare 'Just a moment' interstitial (challenge-platform / _cf_chl_opt) — 403 to WebFetch and curl; could not read ATS or openings"
+  - name: "UB Greensfelder"
+    careers_url: "https://www.ubglaw.com/careers-attorneys/current-openings"
+    ats_type: unknown
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). current-openings page behind Cloudflare 'Just a moment' interstitial (_cf_chl_opt / challenge-platform); could not read ATS or openings"
+  - name: "Whiteford, Taylor & Preston"
+    careers_url: "https://www.whitefordlaw.com/careers"
+    ats_type: other
+    ats_identifier: null
+    public_entry_level: unknown
+    note: "Added 2026-07-20 (Am Law 200 union expansion). Careers page links to Lawcruit/MicronApps JobPosting.aspx (lawfirm=MW5Gaw==); gated Lawcruit application, not pollable"
 
 coverage_summary: >
   73 firms listed — the high-confidence intersection CORE of Vault 100 and Am Law
