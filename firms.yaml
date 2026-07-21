@@ -472,8 +472,9 @@ firms:
     note: "On-site Apply-Online form (wc.com/Careers/Associates/Apply-Online + summer page); no third-party host. 3L + summer apply online."
   - name: "Reed Smith"
     careers_url: "https://careers.reedsmith.com/jobs/home/"
-    ats_type: other
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://careers.reedsmith.com/jobs/rss/"
+    rss: true
     public_entry_level: true
     note: "Oracle PeopleSoft (HCM 9.2) self-hosted: recruit.reedsmith.com/psc/HCM92PRD/... Not a Workday/Greenhouse/Lever vendor."
   - name: "Troutman Pepper Locke"
@@ -834,8 +835,8 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). self-hosted /careers/{slug} html links, ~60 attorney jobs"
   - name: "Tucker Ellis"
     careers_url: "https://www.tuckerellis.com/careers/"
-    ats_type: other
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions?cid=bfffd5ca-fa7e-4101-ba1a-f03511335b81&ccId=9201039197638_2&lang=en_US"
     public_entry_level: unknown
     note: "Added 2026-07-20 (Am Law 200 union expansion). HubSpot CTA (portalId=5108434) redirects to ADP WorkforceNow recruitment (cid=bfffd5ca-fa7e-4101-ba1a-f03511335b81); Attorneys CTA present but ADP board not in pollable set"
   - name: "Venable"
@@ -889,8 +890,8 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Careers link is a Paylocity recruiting job board (recruiting.paylocity.com, board slug ...-ATTY, attorney-specific). Board is a JS app that renders only a browser-compat warning to bots; Paylocity is "
   - name: "Eckert Seamans Cherin & Mellott"
     careers_url: "https://www.eckertseamans.com/our-firm/careers/lawyers"
-    ats_type: other
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://workforcenow.adp.com/mascsr/default/careercenter/public/events/staffing/v1/job-requisitions?cid=67f32c2f-5b03-40de-821f-755e92338e2f&locale=en_US"
     public_entry_level: unknown
     note: "Added 2026-07-20 (Am Law 200 union expansion). 'Current Openings' on /careers/lawyers routes to ADP WorkforceNow recruitment (cid=67f32c2f-5b03-40de-821f-755e92338e2f); ADP board not in pollable set"
   - name: "Freeman Mathis & Gary"
@@ -1251,8 +1252,9 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). Live-classified virecruit."
   - name: "Stinson LLP"
     careers_url: "https://www.stinson.com/careers-LateralAttorneys"
-    ats_type: other
-    ats_identifier: null
+    ats_type: jsonapi
+    ats_identifier: "https://recruiting2.ultipro.com/STI1009STIS/JobBoard/162b1480-f2fa-4444-8ad7-f750cb200b46/JobBoardView/LoadSearchResults"
+    json_post: {"opportunitySearch": {"Top": 200, "Skip": 0}}
     public_entry_level: unknown
     note: "Added 2026-07-20 (Am Law 200 union expansion). UKG/UltiPro (recruiting2.ultipro.com, tenant STI1009STIS) linked from stinson.com/careers-current-opportunities. UltiPro is not in the named pollable set but the public POST endpoint JobBoardView/Load"
   - name: "Stoel Rives LLP"

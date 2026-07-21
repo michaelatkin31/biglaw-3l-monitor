@@ -244,12 +244,14 @@ def normalize_radancy_job(firm: str, href: str, title: str, origin: str) -> Opti
 # Next.js /pageProps/posts, Flo /public-jobs, ClearCompany, Paycom, UltiPro, ...).
 # We auto-locate the jobs array and map fields by key name so one fetcher covers all.
 
-_JOB_TITLE_KEYS = ("title", "jobtitle", "job_title", "positiontitle", "postingtitle", "name")
+_JOB_TITLE_KEYS = ("title", "jobtitle", "job_title", "positiontitle", "postingtitle",
+                   "requisitiontitle", "name")
 _JOB_LOC_KEYS = ("location", "locations", "city", "office", "offices", "locationstext",
                  "region", "joblocation", "full_location", "primarylocation", "fulllocation")
 _JOB_URL_KEYS = ("applyurl", "joburl", "apply_url", "url", "hostedurl", "absolute_url",
                  "jobposturl", "externalpath", "link", "detailurl")
-_JOB_ID_KEYS = ("id", "jobid", "job_id", "reqid", "requisitionid", "postingid", "slug", "ref", "refnumber")
+_JOB_ID_KEYS = ("id", "jobid", "job_id", "itemid", "reqid", "requisitionid",
+                "postingid", "slug", "ref", "refnumber")
 
 
 def _first_key(item: dict, keys) -> Any:
@@ -330,6 +332,34 @@ def normalize_jsonapi_item(firm: str, item: dict, base_url: str) -> Optional[Pos
 def _join_url(base: str, path: str) -> str:
     from urllib.parse import urljoin
     return urljoin(base, path)
+
+
+def parse_rss_jobs(firm: str, xml_text: str) -> list[Posting]:
+    """Parse an RSS/Atom job feed (e.g. eArcu / Reed Smith) into Postings."""
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return []
+    posts: list[Posting] = []
+    for item in root.iter():
+        if not item.tag.endswith("item") and not item.tag.endswith("entry"):
+            continue
+        title = link = guid = ""
+        for ch in item:
+            tag = ch.tag.split("}")[-1].lower()
+            if tag == "title":
+                title = clean_text(ch.text)
+            elif tag == "link":
+                link = clean_text(ch.text) or clean_text(ch.get("href"))
+            elif tag in ("guid", "id"):
+                guid = clean_text(ch.text)
+        if not title:
+            continue
+        posts.append(Posting(firm=firm, job_id=guid or link or f"{firm}:{title}",
+                             title=title, location="", url=link or guid,
+                             ats="jsonapi", posted_date=None))
+    return posts
 
 
 # --- Generic (schema.org JobPosting JSON-LD) -------------------------------

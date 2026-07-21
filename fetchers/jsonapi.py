@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 
 from core.models import Posting
-from core.normalize import find_job_array, normalize_jsonapi_item
+from core.normalize import find_job_array, normalize_jsonapi_item, parse_rss_jobs
 
 from .base import Fetcher, Firm
 
@@ -28,7 +28,23 @@ class JsonApiFetcher(Fetcher):
         url = firm.ats_identifier
         if not url:
             raise ValueError(f"{firm.name}: jsonapi requires ats_identifier (endpoint URL)")
-        data = self.client.get_json(url)
+        opts = firm.options or {}
+
+        # RSS/Atom feed (e.g. eArcu) -> parse XML, not JSON.
+        if opts.get("rss") or url.rstrip("/").lower().endswith("rss"):
+            posts = parse_rss_jobs(firm.name, self.client.get_text(url) or "")
+            if not posts:
+                raise RuntimeError(f"{firm.name}: RSS feed had no items: {url}")
+            log.debug("%s: jsonapi(rss) parsed %d jobs", firm.name, len(posts))
+            return posts
+
+        # Some boards (UltiPro, Avature, Algolia, custom search) only answer to a
+        # POST with a JSON body; store it as `json_post` (and optional `json_headers`).
+        post_body = opts.get("json_post")
+        if post_body is not None:
+            data = self.client.post_json(url, post_body, headers=opts.get("json_headers") or {})
+        else:
+            data = self.client.get_json(url)
         arr = find_job_array(data)
         if not arr:
             raise RuntimeError(
