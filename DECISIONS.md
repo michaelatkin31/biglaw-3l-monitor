@@ -110,9 +110,10 @@ matching.
 
 ## 6. Notification policy
 
-- **Silent on empty days** (the spec's default). No weekly heartbeat was built —
-  easy to add later (render an empty digest on a chosen weekday), but omitted to
-  keep the tool quiet.
+- **Always sends a digest, every run** — including empty days, where it emails a
+  short "no new postings" note. This makes a delivered email double as a heartbeat
+  confirming the monitor ran, rather than leaving silence ambiguous between "nothing
+  new" and "the job broke." (Originally silent on empty days; changed by request.)
 - `notify.py` splits **rendering** (`render_digest`) from **delivery**
   (`EmailNotifier` / `ConsoleNotifier`) behind a `Notifier` protocol, so a future
   read-only web UI over `state.db` — or a Slack channel — can reuse the renderer.

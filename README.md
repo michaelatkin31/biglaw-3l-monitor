@@ -45,7 +45,9 @@ The pipeline per run:
 4. **Diff** against `state.db` — a posting is *new* if `(firm, job_id)` hasn't
    been seen **and** it passes the filter. Re-running the same day emails
    nothing (idempotent).
-5. **Notify** — one grouped-by-firm email digest. Silent on empty days.
+5. **Notify** — one grouped-by-firm email digest, sent every run. On empty days
+   it still emails a short "no new postings" note, so a delivered email doubles
+   as a heartbeat confirming the monitor ran.
 
 ---
 
