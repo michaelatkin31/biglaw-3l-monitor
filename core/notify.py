@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from datetime import date
 from email.message import EmailMessage
 from html import escape
-from typing import Optional, Protocol
+from typing import Callable, Optional, Protocol
 
 from .models import Posting, RunSummary
 
@@ -34,88 +34,145 @@ class Digest:
     match_count: int
 
 
-def _group_by_firm(postings: list[Posting]) -> dict[str, list[Posting]]:
-    grouped: dict[str, list[Posting]] = {}
+def _dedup(postings: list[Posting]) -> list[Posting]:
+    """Collapse presentational duplicates (order-preserving): the same role can
+    arrive under two job_ids (so both are "new") yet render as identical lines.
+    Dedup by the visible fields; a different location/url keeps both."""
     seen: set[tuple[str, str, str, str]] = set()
+    out: list[Posting] = []
     for p in postings:
-        # Collapse presentational duplicates: the same role can arrive under two
-        # job_ids (so both are "new") yet render as identical lines. Dedup by the
-        # visible fields, keeping the first. Different location/url => kept.
-        dedup_key = (
+        key = (
             p.firm.lower(),
             (p.title or "").lower().strip(),
             (p.location or "").lower().strip(),
             (p.url or "").lower().strip(),
         )
-        if dedup_key in seen:
+        if key in seen:
             continue
-        seen.add(dedup_key)
+        seen.add(key)
+        out.append(p)
+    return out
+
+
+def _group_by_firm(postings: list[Posting]) -> dict[str, list[Posting]]:
+    grouped: dict[str, list[Posting]] = {}
+    for p in postings:
         grouped.setdefault(p.firm, []).append(p)
     return {firm: grouped[firm] for firm in sorted(grouped)}
 
 
 def render_digest(
-    new_postings: list[Posting], summary: Optional[RunSummary] = None
+    new_postings: list[Posting],
+    summary: Optional[RunSummary] = None,
+    score_fn: Optional[Callable[[Posting], int]] = None,
 ) -> Digest:
-    """Build a subject + text + HTML digest grouped by firm."""
+    """Build a subject + text + HTML digest.
+
+    When `score_fn` is given (PostingFilter.entry_score), postings with a positive
+    entry-level signal are surfaced in a "Likely entry-level" section at the top,
+    ranked highest-first; everything else falls into "Other associate roles"
+    grouped by firm. With no score_fn (or when nothing scores), it degrades to the
+    plain firm-grouped digest, so ordinary days look unchanged.
+    """
     today = date.today().isoformat()
-    grouped = _group_by_firm(new_postings)
-    # Count the deduped postings actually shown, so the subject/header match the
-    # body (two job_ids for one visible role count once).
-    n = sum(len(posts) for posts in grouped.values())
-    if n:
-        subject = f"[BigLaw 3L Monitor] {n} new entry-level posting(s) — {today}"
-    else:
+    postings = _dedup(new_postings)
+    n = len(postings)
+    score = score_fn or (lambda _p: 0)
+    likely = sorted(
+        (p for p in postings if score(p) > 0),
+        key=lambda p: (-score(p), p.firm.lower(), (p.title or "").lower()),
+    )
+    other = [p for p in postings if score(p) == 0]
+
+    if not n:
         subject = f"[BigLaw 3L Monitor] No new postings — {today}"
+    elif likely:
+        subject = (
+            f"[BigLaw 3L Monitor] {n} new posting(s), "
+            f"{len(likely)} likely entry-level — {today}"
+        )
+    else:
+        subject = f"[BigLaw 3L Monitor] {n} new posting(s) — {today}"
+
+    def _line(p: Posting, with_firm: bool) -> tuple[str, str]:
+        who = f"{p.firm} — " if with_firm else ""
+        loc = f" — {p.location}" if p.location else ""
+        when = f" (posted {p.posted_date})" if p.posted_date else ""
+        return f"  • {who}{p.title}{loc}{when}", f"    {p.url}"
 
     # --- plain text ---
-    text_lines = [f"{n} new entry-level / 3L associate posting(s) as of {today}", ""]
+    text_lines = [f"{n} new 3L / entry-level associate posting(s) as of {today}", ""]
     if not n:
         text_lines.append("No new postings today. The monitor ran successfully.")
         text_lines.append("")
-    for firm, posts in grouped.items():
-        text_lines.append(f"== {firm} ==")
-        for p in posts:
-            loc = f" — {p.location}" if p.location else ""
-            when = f" (posted {p.posted_date})" if p.posted_date else ""
-            text_lines.append(f"  • {p.title}{loc}{when}")
-            text_lines.append(f"    {p.url}")
+    if likely:
+        text_lines.append(f"** LIKELY ENTRY-LEVEL ({len(likely)}) **")
+        for p in likely:
+            text_lines.extend(_line(p, with_firm=True))
         text_lines.append("")
+    if other:
+        # Only label the second tier when a first tier exists above it.
+        if likely:
+            text_lines.append(f"-- OTHER ASSOCIATE ROLES ({len(other)}) --")
+        for firm, posts in _group_by_firm(other).items():
+            text_lines.append(f"== {firm} ==")
+            for p in posts:
+                text_lines.extend(_line(p, with_firm=False))
+            text_lines.append("")
     if summary is not None:
         text_lines.append("---")
         text_lines.append(summary.as_line())
     text_body = "\n".join(text_lines)
 
     # --- html ---
+    def _li(p: Posting, with_firm: bool) -> str:
+        who = f"<strong>{escape(p.firm)}</strong> — " if with_firm else ""
+        loc = f" &middot; {escape(p.location)}" if p.location else ""
+        when = (
+            f" <span style=\"color:#888\">(posted {escape(p.posted_date)})</span>"
+            if p.posted_date
+            else ""
+        )
+        return (
+            f"<li style=\"margin:6px 0\">{who}<a href=\"{escape(p.url)}\" "
+            f"style=\"color:#1a5fb4;text-decoration:none\">{escape(p.title)}</a>"
+            f"{loc}{when}</li>"
+        )
+
     html_parts = [
         "<div style=\"font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;"
         "max-width:640px;margin:0 auto;color:#1a1a1a\">",
         f"<h2 style=\"margin:0 0 4px\">BigLaw 3L / Entry-Level Monitor</h2>",
-        f"<p style=\"color:#666;margin:0 0 16px\">{n} new posting(s) — {escape(today)}</p>",
+        f"<p style=\"color:#666;margin:0 0 16px\">{n} new posting(s)"
+        + (f" &middot; {len(likely)} likely entry-level" if likely else "")
+        + f" — {escape(today)}</p>",
     ]
     if not n:
         html_parts.append(
             "<p style=\"margin:0 0 16px\">No new postings today. "
             "The monitor ran successfully.</p>"
         )
-    for firm, posts in grouped.items():
+    if likely:
         html_parts.append(
-            f"<h3 style=\"margin:20px 0 6px;border-bottom:1px solid #eee;"
-            f"padding-bottom:4px\">{escape(firm)}</h3><ul style=\"padding-left:18px\">"
+            "<h3 style=\"margin:20px 0 6px;color:#1a7f37;border-bottom:2px solid "
+            "#1a7f37;padding-bottom:4px\">⭐ Likely entry-level "
+            f"({len(likely)})</h3><ul style=\"padding-left:18px\">"
         )
-        for p in posts:
-            loc = f" &middot; {escape(p.location)}" if p.location else ""
-            when = (
-                f" <span style=\"color:#888\">(posted {escape(p.posted_date)})</span>"
-                if p.posted_date
-                else ""
-            )
-            html_parts.append(
-                f"<li style=\"margin:6px 0\"><a href=\"{escape(p.url)}\" "
-                f"style=\"color:#1a5fb4;text-decoration:none\">{escape(p.title)}</a>"
-                f"{loc}{when}</li>"
-            )
+        html_parts.extend(_li(p, with_firm=True) for p in likely)
         html_parts.append("</ul>")
+    if other:
+        if likely:
+            html_parts.append(
+                "<h3 style=\"margin:28px 0 6px;color:#666;border-bottom:1px solid "
+                f"#eee;padding-bottom:4px\">Other associate roles ({len(other)})</h3>"
+            )
+        for firm, posts in _group_by_firm(other).items():
+            html_parts.append(
+                f"<h4 style=\"margin:16px 0 4px\">{escape(firm)}</h4>"
+                "<ul style=\"padding-left:18px\">"
+            )
+            html_parts.extend(_li(p, with_firm=False) for p in posts)
+            html_parts.append("</ul>")
     if summary is not None:
         html_parts.append(
             f"<p style=\"color:#999;font-size:12px;margin-top:24px;"

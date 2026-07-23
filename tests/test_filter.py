@@ -169,6 +169,21 @@ def test_geo_gate_catches_foreign_in_title():
     assert f.decide(_p("Houston • 1234 • Attorney", location="")).matched
 
 
+def test_entry_score_ranks_signals():
+    f = _filter()
+    # Strongest: explicit first-year / entry-level / class-year.
+    assert f.entry_score(_p("2026 First Year Associate")) == 3
+    assert f.entry_score(_p("Entry-Level Associate")) == 3
+    assert f.entry_score(_p("Associate, Class of 2027")) == 3
+    # Medium: junior / clerkship signals.
+    assert f.entry_score(_p("Junior Associate")) == 2
+    assert f.entry_score(_p("Judicial Clerkship Associate")) == 2
+    # Ambiguous bare roles score 0 (still shown, just lower).
+    assert f.entry_score(_p("Corporate Associate")) == 0
+    # A signal in the description also counts.
+    assert f.entry_score(_p("Corporate Associate", description="Open to the entering class of 2027.")) == 3
+
+
 def test_apply_returns_only_matches():
     f = _filter()
     postings = [

@@ -114,6 +114,16 @@ matching.
   short "no new postings" note. This makes a delivered email double as a heartbeat
   confirming the monitor ran, rather than leaving silence ambiguous between "nothing
   new" and "the job broke." (Originally silent on empty days; changed by request.)
+- **Ranked digest**: postings with an entry-level signal (via
+  `PostingFilter.entry_score` — first-year/entry-level/class-year = 3,
+  junior/clerkship = 2, ambiguous bare associate = 0) are surfaced in a "Likely
+  entry-level" section at the top, highest-first; the rest go under "Other
+  associate roles" grouped by firm. Purely presentational — scoring never affects
+  include/exclude, and with nothing scoring the digest degrades to the plain
+  firm-grouped form so ordinary days look unchanged. Rationale: the description
+  gate cut the laterals, but on a busy day the one genuine first-year posting
+  could still be buried mid-list; ranking floats it to the top without dropping
+  anything.
 - `notify.py` splits **rendering** (`render_digest`) from **delivery**
   (`EmailNotifier` / `ConsoleNotifier`) behind a `Notifier` protocol, so a future
   read-only web UI over `state.db` — or a Slack channel — can reuse the renderer.
@@ -140,6 +150,18 @@ matching.
   microdata cards, so it needs no browser despite an earlier note calling it "not
   pollable." Playwright is **optional** and used only for firms explicitly marked
   `render: playwright`, to keep the CI run light.
+- **Browser fetcher: empty ≠ blocked.** It used to raise (a run failure) whenever
+  it found zero job links, conflating "page rendered fine but has no current
+  openings" (common for small firms — e.g. Harter Secrest on some days) with
+  "we were bot-walled / the page failed to load." Now `_looks_blocked` checks the
+  HTTP status, Cloudflare/bot-wall challenge markers, and whether the body has any
+  real text: a rendered-but-empty board returns `[]` (no failure), while a genuine
+  block still raises. Firms behind an *intermittent* wall can set
+  `tolerate_block: true` to downgrade even a block to a logged skip — used for
+  **Buchanan** (bipc.com is Cloudflare-walled ~2/3 of days; its real ATS is
+  `buchanan.viglobalcloud.com` viRecruit, but the listing needs a per-firm `Tag`
+  GUID only reachable from the walled careers page, so it isn't cleanly pollable
+  yet — capture that tagged URL to switch it to `ats_type: virecruit`).
 
 ## 7b. Cutting lateral noise (description experience gate + normalization fixes)
 

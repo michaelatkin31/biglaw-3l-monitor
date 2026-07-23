@@ -35,3 +35,37 @@ def test_empty_digest_still_renders():
     d = render_digest([])
     assert d.match_count == 0
     assert "No new postings" in d.subject
+
+
+def _score(p):
+    # Tiny stand-in scorer: entry signal in the title -> 3, else 0.
+    t = p.title.lower()
+    return 3 if ("first year" in t or "entry-level" in t) else 0
+
+
+def test_digest_surfaces_likely_entry_level_on_top():
+    postings = [
+        _p("Corporate Associate", "a", "NY", "http://x/ca"),
+        _p("2026 First Year Associate", "b", "NY", "http://x/fy"),
+        _p("Litigation Associate", "c", "TX", "http://x/lit"),
+        _p("Entry-Level Associate", "d", "MA", "http://x/el"),
+    ]
+    d = render_digest(postings, score_fn=_score)
+    # Subject advertises the likely count.
+    assert "2 likely entry-level" in d.subject
+    # The likely section appears before the "other" section, and the two
+    # entry-level roles appear before the ambiguous ones in the body.
+    body = d.text_body
+    assert body.index("LIKELY ENTRY-LEVEL") < body.index("OTHER ASSOCIATE ROLES")
+    assert body.index("First Year") < body.index("Corporate Associate")
+    assert body.index("Entry-Level Associate") < body.index("Litigation Associate")
+
+
+def test_digest_no_tiers_when_nothing_scores():
+    # With no positive scores the digest degrades to the plain firm-grouped form
+    # (no tier headers), so ordinary days look unchanged.
+    postings = [_p("Corporate Associate", "a", "NY", "http://x/ca")]
+    d = render_digest(postings, score_fn=_score)
+    assert "LIKELY ENTRY-LEVEL" not in d.text_body
+    assert "OTHER ASSOCIATE ROLES" not in d.text_body
+    assert "Corporate Associate" in d.text_body

@@ -46,9 +46,12 @@ The pipeline per run:
 4. **Diff** against `state.db` — a posting is *new* if `(firm, job_id)` hasn't
    been seen **and** it passes the filter. Re-running the same day emails
    nothing (idempotent).
-5. **Notify** — one grouped-by-firm email digest, sent every run. On empty days
-   it still emails a short "no new postings" note, so a delivered email doubles
-   as a heartbeat confirming the monitor ran.
+5. **Notify** — one email digest, sent every run. Postings with an entry-level
+   signal (first-year / entry-level / class-year / 3L / clerkship) are surfaced
+   in a **"Likely entry-level"** section at the top, ranked highest-first; the
+   rest fall under "Other associate roles" grouped by firm. On empty days it
+   still emails a short "no new postings" note, so a delivered email doubles as a
+   heartbeat confirming the monitor ran.
 
 ---
 
@@ -236,6 +239,17 @@ Edit `firms.yaml`:
   public_entry_level: unknown
   note: ""
 ```
+
+Optional per-firm flags (any extra key lands in the firm's `options`):
+
+- `fetch_description: true` — **generic** fetcher only: pull each posting's detail
+  page so the description experience gate can act on it (used where the listing
+  cards omit the body, e.g. Kilpatrick). Adds one request per posting.
+- `tolerate_block: true` — **browser** fetcher only: treat a bot-wall block
+  (Cloudflare "Just a moment…", etc.) as a logged skip rather than a run failure.
+  For sites behind an intermittent wall (e.g. Buchanan) so they stop failing daily
+  but still succeed on days the wall lets a headless browser through.
+- `render: playwright` — **generic** fetcher: render a JS-only page before parsing.
 
 Per-ATS `ats_identifier`:
 

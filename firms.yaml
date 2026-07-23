@@ -1107,8 +1107,9 @@ firms:
     careers_url: "https://www.bipc.com/lateral-attorneys"
     ats_type: browser
     ats_identifier: "https://www.bipc.com/lateral-attorneys"
+    tolerate_block: true   # bipc.com is behind Cloudflare and blocks headless Chromium ~2/3 of days; tolerate_block downgrades those blocks from a daily failure to a logged skip (still succeeds on days the wall lets us through). Real ATS is buchanan.viglobalcloud.com viRecruit, but its listing needs a per-firm Tag GUID only reachable from the Cloudflare-walled careers page -- to make this cleanly pollable, capture the .../viRecruitSelfApply/RecDefault.aspx?Tag=<guid> URL from bipc.com/careers and switch to ats_type: virecruit.
     public_entry_level: unknown
-    note: "RECOVERED 2026-07-20 via headless discovery (browser). viRecruit host unreachable/blocked 2026-07-20; kept other. Added 2026-07-20 (Am Law 200 union expans"
+    note: "RECOVERED 2026-07-20 via headless discovery (browser). Cloudflare-flaky; tolerate_block set 2026-07-23. Added 2026-07-20 (Am Law 200 union expansion)."
   - name: "Butler Snow LLP"
     careers_url: "https://www.butlersnow.com/careers/attorneys/"
     ats_type: jsonapi

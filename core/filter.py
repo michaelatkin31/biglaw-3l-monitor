@@ -110,6 +110,41 @@ class PostingFilter:
         has_us = any(self._kw_hit(m, haystack) for m in self.us_markers)
         return not has_us
 
+    def _signal_text(self, posting: Posting) -> str:
+        """Lowercased title + description -- where entry signals are looked for."""
+        text = self._haystack(posting)
+        description = (getattr(posting, "description", "") or "").lower()
+        return f"{text} {description}" if description else text
+
+    def _has_entry_signal(self, signal_text: str) -> bool:
+        return any(self._kw_hit(k, signal_text) for k in self.entry_signals) or any(
+            rx.search(signal_text) for rx in self.include_regexes
+        )
+
+    # Graded entry-level likelihood, used to rank the digest (higher = more
+    # likely a genuine entry-level / new-grad role). NOT used for include/exclude
+    # -- purely presentational ordering.
+    _STRONG_SIGNALS = (
+        "first-year", "first year", "1st year", "entry-level", "entry level",
+        "new grad", "new graduate", "incoming associate", "entering class",
+    )
+    _MED_SIGNALS = (
+        "3l", "judicial clerk", "clerkship", "post-clerkship", "junior associate",
+        "junior-level", "junior level",
+    )
+
+    def entry_score(self, posting: Posting) -> int:
+        """0 = ambiguous (bare associate/attorney); 2 = a junior/clerkship signal;
+        3 = an explicit first-year/entry-level/class-year signal."""
+        hay = self._signal_text(posting)
+        if any(rx.search(hay) for rx in self.include_regexes) or any(
+            self._kw_hit(k, hay) for k in self._STRONG_SIGNALS
+        ):
+            return 3
+        if any(self._kw_hit(k, hay) for k in self._MED_SIGNALS):
+            return 2
+        return 0
+
     def decide(self, posting: Posting) -> FilterDecision:
         text = self._haystack(posting)
 
@@ -122,13 +157,9 @@ class PostingFilter:
         # a class-year regex, ...) overrides the experience-based excludes below.
         # Checked over title AND description so a body-stated "Class of 2026" or
         # "entry-level" keeps a generically-titled role.
-        signal_text = text
         description = (getattr(posting, "description", "") or "").lower()
-        if description:
-            signal_text = f"{text} {description}"
-        has_entry_signal = any(
-            self._kw_hit(k, signal_text) for k in self.entry_signals
-        ) or any(rx.search(signal_text) for rx in self.include_regexes)
+        signal_text = self._signal_text(posting)
+        has_entry_signal = self._has_entry_signal(signal_text)
         # Experience-based excludes: a title stating years of experience / an
         # ordinal year (2nd+) is definitionally not entry-level. Recall-safe --
         # ambiguous "Corporate Associate" (no experience stated) still passes.

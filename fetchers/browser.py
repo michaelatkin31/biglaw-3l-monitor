@@ -134,6 +134,37 @@ def _collect(page) -> dict:
 _UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
        "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
 
+# Interstitial / bot-wall fingerprints (Cloudflare "Just a moment…", generic
+# "verify you are human" walls, JS/cookie gates). Presence of any of these on an
+# otherwise-empty page means we were blocked, not that the board is empty.
+_BLOCK_MARKERS = (
+    "just a moment", "attention required", "verify you are human",
+    "checking your browser", "enable javascript and cookies", "cf-chl",
+    "cf_chl", "/cdn-cgi/challenge", "please turn javascript on", "ddos protection",
+    "access denied", "request unsuccessful",
+)
+
+
+def _looks_blocked(page, response) -> bool:
+    """True if an empty result is due to a block/load failure rather than a
+    genuinely empty board. Checks HTTP status, challenge markers, and whether the
+    page has any real body text at all."""
+    try:
+        status = response.status if response is not None else 0
+    except Exception:
+        status = 0
+    if status and status >= 400:
+        return True
+    try:
+        body = (page.inner_text("body") or "").strip()
+    except Exception:
+        body = ""
+    haystack = f"{body}\n{page.url}".lower()
+    if any(m in haystack for m in _BLOCK_MARKERS):
+        return True
+    # A near-empty body means nothing rendered (blank/blocked), not "0 openings".
+    return len(body) < 200
+
 
 class BrowserFetcher(Fetcher):
     """Reuses a single headless Chromium across all firms in a run (launching one
@@ -175,9 +206,10 @@ class BrowserFetcher(Fetcher):
                 f"(pip install playwright && playwright install chromium)"
             ) from e
 
+        blocked = False
         try:
             pg = ctx.new_page()
-            pg.goto(url, wait_until="domcontentloaded", timeout=45000)
+            resp = pg.goto(url, wait_until="domcontentloaded", timeout=45000)
             pg.wait_for_timeout(6000)
             links = _collect(pg)
             if len(links) < 3:  # some boards load jobs via a slow XHR -- wait & retry
@@ -195,12 +227,36 @@ class BrowserFetcher(Fetcher):
                         links = _collect(pg) or links
                 except Exception:
                     pass
+            # Distinguish "page rendered fine but has no openings" (a legitimate
+            # empty board -> return []) from "we were blocked / the page failed to
+            # load" (a real failure worth surfacing). Only decide when we found
+            # nothing, since a non-empty result already proves the page rendered.
+            if not links:
+                blocked = _looks_blocked(pg, resp)
         finally:
             try: ctx.close()
             except Exception: pass
 
         if not links:
-            raise RuntimeError(f"{firm.name}: browser render found no job listings: {url}")
+            if blocked:
+                # Firms whose page sits behind an intermittent bot-wall (e.g.
+                # Buchanan on Cloudflare) can set `tolerate_block: true` so a block
+                # is a logged skip, not a daily failure -- the fetch still succeeds
+                # opportunistically on days the wall lets a headless browser through.
+                if firm.options.get("tolerate_block"):
+                    log.warning(
+                        "%s: browser page blocked (bot-wall); skipping this run "
+                        "without failing (tolerate_block): %s",
+                        firm.name, url,
+                    )
+                    return []
+                raise RuntimeError(
+                    f"{firm.name}: browser render blocked or failed to load: {url}"
+                )
+            # Rendered OK, genuinely zero openings -> not an error (no spurious
+            # daily failure for small firms that simply have no current openings).
+            log.info("%s: browser render OK, 0 openings currently listed", firm.name)
+            return []
         postings = []
         for key, title in links.items():
             title = clean_text(title)
