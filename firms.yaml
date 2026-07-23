@@ -720,10 +720,10 @@ firms:
     note: "Added 2026-07-20 (Am Law 200 union expansion). No third-party ATS; applications route through a Monday.com form (forms.monday.com/forms/3d08c4075ada24eb8d91e9d66627b98e). Careers organized into Partners/Associates/Staff/Summer Associates category "
   - name: "Kilpatrick Townsend & Stockton"
     careers_url: "https://kilpatrickrecruits.com/open-positions/"
-    ats_type: browser
-    ats_identifier: "https://kilpatrickrecruits.com/open-positions/"
+    ats_type: generic
+    ats_identifier: null
     public_entry_level: unknown
-    note: "RECOVERED 2026-07-20 via headless discovery (browser). Added 2026-07-20 (Am Law 200 union expansion). icims; not pollable."
+    note: "RECLASSIFIED 2026-07-21: kilpatrickrecruits.com/open-positions/ is a WordPress front-end that server-renders every opening as schema.org JobPosting microdata (title/datePosted + a per-job detail URL that links out to careers-kilpatricktownsend.icims.com). Plain-HTTP pollable via the generic fetcher's microdata path -- no browser needed. (Was ats_type: browser; note claimed 'icims; not pollable', which was wrong -- the WP page mirrors the icims jobs into static HTML.)"
   - name: "Lewis Brisbois Bisgaard & Smith"
     careers_url: "https://www.lewisbrisbois.com/careers"
     ats_type: icims

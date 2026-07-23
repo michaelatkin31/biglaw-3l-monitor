@@ -18,7 +18,7 @@ fetchers/
   greenhouse.py       # boards-api.greenhouse.io public JSON
   lever.py            # api.lever.co public JSON
   workday.py          # POST .../wday/cxs/{tenant}/{site}/jobs (JSON, paginated)
-  generic.py          # HTML fallback: schema.org JobPosting JSON-LD (+ optional Playwright)
+  generic.py          # HTML fallback: schema.org JobPosting JSON-LD + microdata (+ optional Playwright)
 core/
   models.py           # the normalized Posting shape
   normalize.py        # raw ATS payload -> {firm, job_id, title, location, url, posted_date, ats}
@@ -73,7 +73,7 @@ Nine ATS backends have working fetchers, so the monitor actively polls
 - **3 Greenhouse** (Fried Frank, Hughes Hubbard, …) · **2 career.page** (Jibe —
   Morrison & Foerster, Ogletree) · **1 Ashby** (Barnes & Thornburg) ·
   **1 SmartRecruiters** (Crowell & Moring) · **1 Radancy** (A&O Shearman) ·
-  **1 generic** JSON-LD.
+  **2 generic** (Bond Schoeneck JSON-LD; Kilpatrick microdata).
 
 The Am Law tail (ranks ~50-200) leans far more on these pollable ATSs — and posts
 entry-level / 2L-summer roles publicly — much more than the gated elite core, so
@@ -228,8 +228,9 @@ Per-ATS `ats_identifier`:
 - **workday** — `"tenant/site"`. Optionally pin `workday_host:
   tenant.wdN.myworkdayjobs.com` to skip data-center probing.
 - **generic** — leave `null`; the fetcher reads `careers_url` and extracts
-  schema.org `JobPosting` JSON-LD. For a truly JS-rendered page add
-  `render: playwright` (and install Playwright — see `requirements.txt`).
+  schema.org `JobPosting` from both JSON-LD blocks and inline microdata cards.
+  For a truly JS-rendered page add `render: playwright` (and install Playwright —
+  see `requirements.txt`).
 
 Or just run `python classify.py --firm "Example LLP" --write`.
 
@@ -241,6 +242,6 @@ Or just run `python classify.py --firm "Example LLP" --write`.
 python -m pytest -q
 ```
 
-Unit tests cover normalization, filtering, diffing, the generic JSON-LD parser,
-the ATS-detection logic, and the full orchestration (with a fake fetcher — no
-network).
+Unit tests cover normalization, filtering, diffing, the generic JSON-LD and
+microdata parsers, the ATS-detection logic, and the full orchestration (with a
+fake fetcher — no network).

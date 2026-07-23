@@ -131,9 +131,15 @@ matching.
 - **Workday `posted_date`** is a relative string ("Posted 5 Days Ago") — the CXS
   jobs list carries no absolute date. It's stored as-is (informational only;
   identity is `(firm, job_id)`).
-- **Generic fetcher** extracts schema.org `JobPosting` JSON-LD (what ATSs emit
-  for Google-for-Jobs SEO). Playwright is **optional** and used only for firms
-  explicitly marked `render: playwright`, to keep the CI run light.
+- **Generic fetcher** extracts schema.org `JobPosting` in both standard
+  encodings: `application/ld+json` blocks (what most ATSs emit for Google-for-Jobs
+  SEO) and inline **microdata** (`itemtype=".../JobPosting"` + `itemprop` on the
+  rendered cards). The microdata path is what makes some WordPress careers
+  front-ends pollable over plain HTTP — e.g. Kilpatrick's
+  `kilpatrickrecruits.com/open-positions/` mirrors its iCIMS jobs into static
+  microdata cards, so it needs no browser despite an earlier note calling it "not
+  pollable." Playwright is **optional** and used only for firms explicitly marked
+  `render: playwright`, to keep the CI run light.
 
 ## 8. Runner / polite fetching
 

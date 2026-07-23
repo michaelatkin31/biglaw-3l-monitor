@@ -3,8 +3,14 @@
 Used only for firms not on Greenhouse/Lever/Workday. Strategy, cheapest first:
 
   1. Lightweight HTML GET of `careers_url`, then extract schema.org JobPosting
-     objects from <script type="application/ld+json"> blocks. Many careers CMSs
-     (and every ATS that cares about Google for Jobs SEO) embed these.
+     objects from the page. Two encodings are read, both standard and both common
+     on careers CMSs that care about Google-for-Jobs SEO:
+       a. <script type="application/ld+json"> blocks (JSON-LD).
+       b. Inline microdata (itemtype="https://schema.org/JobPosting" +
+          itemprop="title"/"datePosted"/... on the rendered job cards). Some
+          WordPress/CMS careers front-ends (e.g. Kilpatrick) render the openings
+          as microdata cards with no JSON-LD and no public JSON API, but are still
+          plain server-rendered HTML -- so no browser is needed.
   2. Only if the page is truly JS-rendered AND the firm sets `render: playwright`
      in firms.yaml do we fall back to Playwright. Playwright is an optional
      dependency; keep this set as small as possible so the whole thing still runs
@@ -21,7 +27,7 @@ import re
 from typing import Any
 
 from core.models import Posting
-from core.normalize import normalize_jsonld_job
+from core.normalize import clean_text, normalize_jsonld_job
 
 from .base import Fetcher, Firm
 
@@ -31,6 +37,84 @@ _JSONLD_RE = re.compile(
     r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
     re.DOTALL | re.IGNORECASE,
 )
+
+# --- schema.org microdata (itemscope/itemprop) ----------------------------
+_MICRODATA_JOB_RE = re.compile(
+    r'itemtype=["\']https?://schema\.org/JobPosting["\']', re.IGNORECASE
+)
+# Links that are share/apply-elsewhere chrome, not the job's own canonical URL.
+_SOCIAL_HREF_RE = re.compile(
+    r'linkedin\.com/share|twitter\.com/share|x\.com/share|facebook\.com/(?:share|sharer)'
+    r'|/sharer|mailto:|^javascript:|addthis|whatsapp|t\.me/share|reddit\.com/submit',
+    re.IGNORECASE,
+)
+_TAGS_RE = re.compile(r"<[^>]+>")
+
+
+def _microdata_prop(scope: str, name: str) -> str:
+    """First value of itemprop=`name` within `scope` -- content attr or inner text."""
+    m = re.search(
+        rf'itemprop=["\']{name}["\'][^>]*\bcontent=["\']([^"\']*)["\']', scope, re.IGNORECASE
+    )
+    if m:
+        return clean_text(m.group(1))
+    m = re.search(rf'itemprop=["\']{name}["\'][^>]*>(.*?)</', scope, re.IGNORECASE | re.DOTALL)
+    return clean_text(_TAGS_RE.sub(" ", m.group(1))) if m else ""
+
+
+def _microdata_url(scope: str) -> str:
+    """The job's own URL: an explicit itemprop=url, else the first non-share link."""
+    m = re.search(
+        r'itemprop=["\']url["\'][^>]*\bhref=["\']([^"\']+)["\']', scope, re.IGNORECASE
+    )
+    if m:
+        return clean_text(m.group(1))
+    for m in re.finditer(r'<a\b[^>]*\bhref=["\'](https?://[^"\']+)["\']', scope, re.IGNORECASE):
+        href = m.group(1)
+        if not _SOCIAL_HREF_RE.search(href):
+            return clean_text(href)
+    return ""
+
+
+def extract_microdata_jobs(firm_name: str, html: str, page_url: str) -> list[Posting]:
+    """Extract schema.org JobPosting *microdata* cards from server-rendered HTML.
+
+    Cards are delimited by successive JobPosting itemtype markers (they render as
+    sibling elements); each card's title/datePosted/url are read from the first
+    matching itemprop after its marker. Location is only captured when the card
+    exposes it as microdata -- otherwise blank, which the US-only geo gate treats
+    as ambiguous and keeps (recall-safe).
+    """
+    markers = [m.start() for m in _MICRODATA_JOB_RE.finditer(html)]
+    if not markers:
+        return []
+    postings: list[Posting] = []
+    for i, start in enumerate(markers):
+        end = markers[i + 1] if i + 1 < len(markers) else len(html)
+        scope = html[start:end]
+        title = _microdata_prop(scope, "title") or _microdata_prop(scope, "name")
+        if not title:
+            continue
+        url = _microdata_url(scope) or page_url
+        location = _microdata_prop(scope, "jobLocation") or _microdata_prop(
+            scope, "addressLocality"
+        )
+        posted = _microdata_prop(scope, "datePosted")
+        # A per-job URL is a stable id; fall back to firm+title when the card
+        # has no link of its own (so every card still dedups sensibly).
+        job_id = url if url != page_url else f"{firm_name}:{title}"
+        postings.append(
+            Posting(
+                firm=firm_name,
+                job_id=job_id,
+                title=title,
+                location=location,
+                url=url,
+                ats="generic",
+                posted_date=posted or None,
+            )
+        )
+    return postings
 
 
 def _iter_jobposting_objects(payload: Any):
@@ -78,10 +162,20 @@ class GenericFetcher(Fetcher):
         else:
             html = self.client.get_text(firm.careers_url) or ""
 
+        # JSON-LD first (richest); then microdata cards. Dedup across both by the
+        # per-job URL (falling back to the job_id, which is firm+title when a card
+        # carries no link), since a page can carry the same job in both encodings.
         postings = extract_jsonld_jobs(firm.name, html, firm.careers_url)
+        seen = {p.url for p in postings if p.url and p.url != firm.careers_url}
+        for p in extract_microdata_jobs(firm.name, html, firm.careers_url):
+            key = p.url if (p.url and p.url != firm.careers_url) else p.job_id
+            if key in seen:
+                continue
+            seen.add(key)
+            postings.append(p)
         if not postings:
             log.debug(
-                "%s: generic fetch found no JSON-LD JobPosting at %s",
+                "%s: generic fetch found no JSON-LD or microdata JobPosting at %s",
                 firm.name,
                 firm.careers_url,
             )
