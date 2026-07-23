@@ -2,12 +2,15 @@ name: biglaw-3l-monitor
 
 # Daily digest of new 3L / entry-level associate postings.
 #
-# Schedule: 12:00 UTC every day. That is 8:00 AM US-Eastern during EDT
-# (summer) and 7:00 AM US-Eastern during EST (winter). Adjust the cron below
-# if you want a fixed local hour year-round (GitHub cron is always UTC).
+# Schedule: 08:17 UTC every day = ~4:17 AM US-Eastern during EDT (summer) and
+# ~3:17 AM during EST (winter). GitHub cron is always UTC, so a fixed local hour
+# year-round isn't possible; this targets the early-morning window the inbox is
+# checked. Deliberately at :17, NOT on the hour -- GitHub throttles the flood of
+# jobs scheduled at :00 and delays them (the old "0 12" run routinely fired
+# ~90 min late, landing near 10 AM ET). An off-hour minute runs closer to on-time.
 on:
   schedule:
-    - cron: "0 12 * * *"
+    - cron: "17 8 * * *"
   workflow_dispatch: {}     # allow manual runs from the Actions tab
 
 # Needed so the job can commit state.db back to the repo.
@@ -43,7 +46,11 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          # EMAIL_TO is the primary recipient list; EMAIL_TO_EXTRA appends more
+          # recipients without exposing addresses in this public repo (main.py
+          # splits on commas and ignores blanks, so an unset EMAIL_TO_EXTRA and
+          # the trailing comma are both harmless).
+          EMAIL_TO: "${{ secrets.EMAIL_TO }},${{ secrets.EMAIL_TO_EXTRA }}"
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
         run: python main.py
 
