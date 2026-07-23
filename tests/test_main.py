@@ -86,9 +86,10 @@ def test_real_run_writes_state_and_is_idempotent(tmp_path, monkeypatch):
     from core.diff import DiffStore
     with DiffStore(tmp / "state.db") as s:
         assert s.count() == 1
-    # Second run: nothing new -> rc 0 (silent).
+    # Second run: nothing new, but we still send a heartbeat digest. With no
+    # SMTP configured the send fails and we fall back to console -> rc 1.
     rc2 = main_mod.run(_args(tmp, dry_run=False))
-    assert rc2 == 0
+    assert rc2 == 1
 
 
 def test_seed_writes_state_without_email(tmp_path, monkeypatch):
@@ -100,9 +101,10 @@ def test_seed_writes_state_without_email(tmp_path, monkeypatch):
     from core.diff import DiffStore
     with DiffStore(tmp / "state.db") as s:
         assert s.count() == 1
-    # A subsequent real run finds nothing new (backlog was seeded).
+    # A subsequent real run finds nothing new (backlog was seeded), but still
+    # sends a heartbeat digest. No SMTP -> console fallback -> rc 1.
     rc2 = main_mod.run(_args(tmp, dry_run=False))
-    assert rc2 == 0
+    assert rc2 == 1
 
 
 def test_one_firm_failure_does_not_abort(tmp_path, monkeypatch):

@@ -156,10 +156,8 @@ def run(args: argparse.Namespace) -> int:
         return 0
 
     # --- notify ---
-    if not new_matches:
-        log.info("No new matches -- sending nothing (silent on empty days).")
-        return 0
-
+    # Always send a digest, even on empty days, so a delivered email doubles as
+    # a heartbeat confirming the monitor ran. render_digest handles n == 0.
     digest = render_digest(new_matches, summary)
     if args.dry_run:
         log.info("[DRY-RUN] Would email %d new match(es):", len(new_matches))

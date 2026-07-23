@@ -47,12 +47,18 @@ def render_digest(
     """Build a subject + text + HTML digest grouped by firm."""
     today = date.today().isoformat()
     n = len(new_postings)
-    subject = f"[BigLaw 3L Monitor] {n} new entry-level posting(s) — {today}"
+    if n:
+        subject = f"[BigLaw 3L Monitor] {n} new entry-level posting(s) — {today}"
+    else:
+        subject = f"[BigLaw 3L Monitor] No new postings — {today}"
 
     grouped = _group_by_firm(new_postings)
 
     # --- plain text ---
     text_lines = [f"{n} new entry-level / 3L associate posting(s) as of {today}", ""]
+    if not n:
+        text_lines.append("No new postings today. The monitor ran successfully.")
+        text_lines.append("")
     for firm, posts in grouped.items():
         text_lines.append(f"== {firm} ==")
         for p in posts:
@@ -73,6 +79,11 @@ def render_digest(
         f"<h2 style=\"margin:0 0 4px\">BigLaw 3L / Entry-Level Monitor</h2>",
         f"<p style=\"color:#666;margin:0 0 16px\">{n} new posting(s) — {escape(today)}</p>",
     ]
+    if not n:
+        html_parts.append(
+            "<p style=\"margin:0 0 16px\">No new postings today. "
+            "The monitor ran successfully.</p>"
+        )
     for firm, posts in grouped.items():
         html_parts.append(
             f"<h3 style=\"margin:20px 0 6px;border-bottom:1px solid #eee;"
