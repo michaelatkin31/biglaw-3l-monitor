@@ -1,7 +1,10 @@
 from core.normalize import (
+    clean_description,
     clean_text,
+    clean_title,
     normalize_careerpage_job,
     normalize_greenhouse_job,
+    normalize_jsonapi_item,
     normalize_lever_posting,
     normalize_radancy_job,
     normalize_smartrecruiters_posting,
@@ -14,6 +17,36 @@ def test_clean_text():
     assert clean_text("  Hello\n\tWorld ") == "Hello World"
     assert clean_text("Ben &amp; Jerry") == "Ben & Jerry"
     assert clean_text(None) == ""
+    # WP-JSON {'rendered': ...} wrappers are unwrapped, not str()'d.
+    assert clean_text({"rendered": "Public Finance Associate"}) == "Public Finance Associate"
+
+
+def test_clean_title_strips_req_prefix():
+    assert clean_title("1029 - Corporate Associate") == "Corporate Associate"
+    assert clean_title("Corporate Associate") == "Corporate Associate"
+    # A year-like title that isn't a req prefix is left alone.
+    assert clean_title("2026 First Year Associate") == "2026 First Year Associate"
+
+
+def test_clean_description_strips_markup():
+    # Real (unencoded) HTML.
+    assert clean_description("<p>We seek an <b>associate</b>.</p>") == "We seek an associate ."
+    # Entity-encoded HTML (Greenhouse style) is unescaped THEN stripped.
+    assert clean_description("&lt;p&gt;3+ years&lt;/p&gt;") == "3+ years"
+    assert clean_description(None) == ""
+
+
+def test_jsonapi_rendered_title_and_description():
+    # Dinsmore-style WP-JSON payload: title is a {'rendered': ...} dict.
+    item = {
+        "title": {"rendered": "Public Finance Associate"},
+        "link": "https://firm.com/jobs/1",
+        "id": 1,
+        "content": {"rendered": "<p>Requires 3+ years.</p>"},
+    }
+    p = normalize_jsonapi_item("Firm", item, "https://firm.com")
+    assert p.title == "Public Finance Associate"
+    assert "3+ years" in p.description
 
 
 def test_greenhouse():

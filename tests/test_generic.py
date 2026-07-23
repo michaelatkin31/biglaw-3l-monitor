@@ -1,4 +1,20 @@
-from fetchers.generic import extract_jsonld_jobs, extract_microdata_jobs
+from fetchers.generic import _detail_text, extract_jsonld_jobs, extract_microdata_jobs
+
+
+def test_detail_text_prefers_content_region():
+    # Experience text lives in <main>; nav/footer noise is excluded.
+    html = (
+        "<html><nav>Home 20 years of tradition</nav>"
+        "<main><p>Seeking an associate with at least 3 years of experience.</p></main>"
+        "<footer>Founded 100 years ago</footer></html>"
+    )
+    text = _detail_text(html)
+    assert "at least 3 years of experience" in text
+    assert "tradition" not in text and "Founded" not in text
+
+
+def test_detail_text_empty():
+    assert _detail_text("") == ""
 
 _HTML_SINGLE = """
 <html><head>

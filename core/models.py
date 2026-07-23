@@ -26,6 +26,12 @@ class Posting:
     # dates; Workday gives a relative string ("Posted 5 Days Ago"). It is
     # informational only -- (firm, job_id) is the identity key, never the date.
     posted_date: Optional[str] = None
+    # Cleaned (tags-stripped, truncated) job description when the fetcher can get
+    # it cheaply from the listing payload (Greenhouse/Lever/Ashby/career.page/
+    # jsonapi/JSON-LD). Empty for fetchers whose listing carries no body (Workday
+    # CXS, viRecruit, Radancy, browser). Transient: used by the filter's
+    # experience gate, NOT persisted to state.db (identity is still firm+job_id).
+    description: str = ""
 
     def key(self) -> tuple[str, str]:
         return (self.firm, self.job_id)

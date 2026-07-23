@@ -49,6 +49,19 @@ class PostingFilter:
         self.exclude_regexes = [
             re.compile(p, re.IGNORECASE) for p in filter_cfg.get("exclude_regexes", [])
         ]
+        # Experience gate on the DESCRIPTION body (when a fetcher provides one):
+        # a stated years-of-experience floor there disqualifies a role whose
+        # TITLE is silent about seniority (a bare "Corporate Associate" that the
+        # body reveals wants "3+ years"). Kept separate from exclude_regexes --
+        # these must be number-bearing, never the bare "years of experience",
+        # which appears in almost every description including entry-level ones.
+        self.experience_gate_description = bool(
+            filter_cfg.get("experience_gate_description", False)
+        )
+        self.description_exclude_regexes = [
+            re.compile(p, re.IGNORECASE)
+            for p in filter_cfg.get("description_exclude_regexes", [])
+        ]
         self.entry_signals = [k.lower() for k in filter_cfg.get("entry_signal_keywords", [])]
         # Search title by default; optionally fold in location/other fields.
         self.search_fields = filter_cfg.get("search_fields", ["title"])
@@ -77,18 +90,24 @@ class PostingFilter:
         return re.search(rf"(?<!\w){re.escape(keyword)}(?!\w)", text) is not None
 
     def _is_foreign_only(self, posting: Posting) -> bool:
-        """True iff the location names a foreign place and no US place.
+        """True iff a foreign place is named and no US place is.
 
-        Recall-safe: unknown/ambiguous locations ("3 Locations", a bare US city
-        with no state, empty) are NOT foreign-only, so they are kept.
+        Checks the location AND the title: some boards (e.g. Baker McKenzie) drop
+        the office into the title ("London • 3330 • Attorney") and leave the
+        location field blank, which would otherwise slip the geo gate. Recall-safe:
+        unknown/ambiguous strings ("3 Locations", a bare US city, empty) are NOT
+        foreign-only, so they are kept; a foreign word only excludes when no US
+        place is named anywhere in location+title.
         """
         loc = (getattr(posting, "location", "") or "").lower()
-        if not loc:
+        title = (getattr(posting, "title", "") or "").lower()
+        haystack = f"{loc} {title}".strip()
+        if not haystack:
             return False
-        has_foreign = any(self._kw_hit(m, loc) for m in self.foreign_markers)
+        has_foreign = any(self._kw_hit(m, haystack) for m in self.foreign_markers)
         if not has_foreign:
             return False
-        has_us = any(self._kw_hit(m, loc) for m in self.us_markers)
+        has_us = any(self._kw_hit(m, haystack) for m in self.us_markers)
         return not has_us
 
     def decide(self, posting: Posting) -> FilterDecision:
@@ -101,9 +120,15 @@ class PostingFilter:
 
         # A confident entry signal ("entry-level", "first-year", "class of 2026",
         # a class-year regex, ...) overrides the experience-based excludes below.
-        has_entry_signal = any(self._kw_hit(k, text) for k in self.entry_signals) or any(
-            rx.search(text) for rx in self.include_regexes
-        )
+        # Checked over title AND description so a body-stated "Class of 2026" or
+        # "entry-level" keeps a generically-titled role.
+        signal_text = text
+        description = (getattr(posting, "description", "") or "").lower()
+        if description:
+            signal_text = f"{text} {description}"
+        has_entry_signal = any(
+            self._kw_hit(k, signal_text) for k in self.entry_signals
+        ) or any(rx.search(signal_text) for rx in self.include_regexes)
         # Experience-based excludes: a title stating years of experience / an
         # ordinal year (2nd+) is definitionally not entry-level. Recall-safe --
         # ambiguous "Corporate Associate" (no experience stated) still passes.
@@ -111,6 +136,14 @@ class PostingFilter:
             for rx in self.exclude_regexes:
                 if rx.search(text):
                     return FilterDecision(False, f"excluded by regex: {rx.pattern!r}")
+            # Description experience gate: the title is silent about seniority,
+            # but the body states a years-of-experience floor -> lateral, drop it.
+            if self.experience_gate_description and description:
+                for rx in self.description_exclude_regexes:
+                    if rx.search(description):
+                        return FilterDecision(
+                            False, f"excluded by description regex: {rx.pattern!r}"
+                        )
 
         # US-only geo gate: drop clearly-foreign postings before include matching
         # so a recall-first keyword net doesn't surface London/Milan/Singapore

@@ -722,6 +722,7 @@ firms:
     careers_url: "https://kilpatrickrecruits.com/open-positions/"
     ats_type: generic
     ats_identifier: null
+    fetch_description: true   # microdata cards lack a description; the detail page states the experience floor, so fetch it for the experience gate
     public_entry_level: unknown
     note: "RECLASSIFIED 2026-07-21: kilpatrickrecruits.com/open-positions/ is a WordPress front-end that server-renders every opening as schema.org JobPosting microdata (title/datePosted + a per-job detail URL that links out to careers-kilpatricktownsend.icims.com). Plain-HTTP pollable via the generic fetcher's microdata path -- no browser needed. (Was ats_type: browser; note claimed 'icims; not pollable', which was wrong -- the WP page mirrors the icims jobs into static HTML.)"
   - name: "Lewis Brisbois Bisgaard & Smith"

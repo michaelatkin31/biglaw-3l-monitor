@@ -88,6 +88,33 @@ filters:
     - '\b(?:2nd|3rd|4th|5th|6th|7th|8th|second|third|fourth|fifth|sixth|seventh|eighth)[\s-]*year\b'  # 2nd+ year
     - '\bmid[\s-]?senior\b'                                         # "mid-senior level"
 
+  # DESCRIPTION EXPERIENCE GATE ------------------------------------------------
+  # BigLaw public boards rarely put seniority in the *title* -- a lateral role is
+  # just "Corporate Associate", and the "3+ years" requirement lives in the body.
+  # When a fetcher provides a description (Greenhouse/Lever/Ashby/career.page/
+  # jsonapi/JSON-LD; NOT Workday/viRecruit/Radancy/browser, whose listings carry
+  # no body), these NUMBER-BEARING patterns disqualify a title that is silent
+  # about seniority. An entry signal anywhere in title+description overrides.
+  # Recall-safe: a posting with no description is never dropped by this gate.
+  #
+  # These are deliberately number-bearing only -- the bare "years of experience"
+  # phrase (in exclude_regexes) is NOT here, because nearly every description,
+  # entry-level included, contains it. Ranges/floors starting at 1 are kept
+  # (a "1-3 years" role is plausibly open to a new grad).
+  experience_gate_description: true
+  description_exclude_regexes:
+    - '(?<![\d\-–—])[2-9]\d*\s*[-–—]\s*\d+\s*\+?\s*(?:years?|yrs?|pqe)'   # "3-5 years", "2-7+ years"
+    - '(?<![\d\-–—])[2-9]\d*\s*\+\s*(?:years?|yrs?|pqe)'                  # "5+ years"
+    - '(?:at least|minimum|min\.?|least|with|over)\s+(?:of\s+)?[2-9]\d*\s*\+?\s*(?:years?|yrs?)'  # "at least 3 years", "minimum of 5 years"
+    - '(?<![\d\-–—])[2-9]\d*\s*(?:to|-|–|—|or more)\s*\d*\s*(?:years?|yrs?)\s+(?:of\s+)?(?:relevant\s+|prior\s+|practice\s+|legal\s+|professional\s+|law[\s-]firm\s+)?(?:experience|exp)\b'  # "3 to 5 years of experience"
+    - '(?<![\d\-–—])[2-9]\d*\s*(?:years?|yrs?)\s+(?:of\s+)?(?:relevant\s+|prior\s+|practice\s+|legal\s+|professional\s+|law[\s-]firm\s+)?(?:experience|exp)\b'  # "3 years (of) experience" (guarded so "0-2 years" is kept)
+    - '(?<![\d\-–—])[2-9]\d*\s*\+?\s*pqe\b'                               # "3 PQE", "5+ PQE"
+    # Spelled-out year counts (very common: "two to four years", "at least three
+    # years"). "one"/"a year" deliberately excluded so genuine junior roles pass.
+    - '(?<!\w)(?:two|three|four|five|six|seven|eight|nine|ten)\s*(?:to|through|[-–—])\s*(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s*\+?\s*(?:years?|yrs?)'  # "two to four years"
+    - '(?:at least|minimum|min\.?\s*of|least|with|about|approximately|over)\s+(?:two|three|four|five|six|seven|eight|nine|ten)\s*\+?\s*(?:years?|yrs?)'  # "at least two years"
+    - '(?<!\w)(?:two|three|four|five|six|seven|eight|nine|ten)\s*\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:relevant\s+|prior\s+|practice\s+|legal\s+|professional\s+|law[\s-]firm\s+|post[\s-]?(?:qualification|jd|graduate)\s+)?(?:experience|exp|practicing)\b(?!\s+(?:of\s+)?(?:law\s+)?school)'  # "two years of experience"
+
   # ANY of these regexes => candidate include (class-year / junior phrasings the
   # bare keywords might miss in unusual word order).
   include_regexes:

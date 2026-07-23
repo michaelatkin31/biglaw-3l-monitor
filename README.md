@@ -41,7 +41,8 @@ The pipeline per run:
    failing never aborts the run).
 2. **Normalize** every posting to `{firm, job_id, title, location, url,
    posted_date, ats}`.
-3. **Filter** by include/exclude keywords + class-year regexes (see below).
+3. **Filter** by include/exclude keywords + class-year regexes + a description
+   experience gate (see below).
 4. **Diff** against `state.db` — a posting is *new* if `(firm, job_id)` hasn't
    been seen **and** it passes the filter. Re-running the same day emails
    nothing (idempotent).
@@ -193,10 +194,25 @@ net; missing a real posting is worse than showing a lateral one):
   non-attorney staff titles (`paralegal`, `coordinator`, `manager`, `analyst`,
   `recruiting`, `conflicts`, …); and foreign-qualification words (`solicitor`,
   `trainee`, `m/w/d`, `rechtsanwalt`, …).
-- **US-only geo gate** (`us_only: true`): drops postings whose location names a
-  foreign place and no US place (kills the London/Frankfurt/Singapore trainee
-  tail). Recall-safe — ambiguous locations ("3 Locations", a bare US city) are
-  kept. Tune via `us_location_markers` / `foreign_location_markers`.
+- **Description experience gate** (`experience_gate_description: true`): the big
+  lever against lateral noise. BigLaw boards rarely put seniority in the *title*
+  (a lateral role is just "Corporate Associate"); the "3+ years" requirement
+  lives in the body. When a fetcher provides a description, a stated
+  years-of-experience floor there drops a title that is silent about seniority —
+  unless an entry signal is present anywhere. Handles digits, ranges, "at least
+  N", and spelled-out counts ("two to four years"). Recall-safe: floors starting
+  at 0–1 ("0-2 years") are kept, and a posting with no description is never
+  dropped by this gate. Descriptions come from Greenhouse/Lever/Ashby/career.page/
+  jsonapi/JSON-LD listings; fetchers whose listing has no body (Workday CXS,
+  viRecruit, Radancy, browser, microdata) are **title-only** unless the firm sets
+  `fetch_description: true` (generic fetcher only — pulls each detail page; used
+  for Kilpatrick). Tune via `description_exclude_regexes`.
+- **US-only geo gate** (`us_only: true`): drops postings whose location **or
+  title** names a foreign place and no US place (kills the London/Frankfurt/
+  Singapore trainee tail, including boards like Baker McKenzie that put the office
+  in the title and leave location blank). Recall-safe — ambiguous locations
+  ("3 Locations", a bare US city) are kept. Tune via `us_location_markers` /
+  `foreign_location_markers`.
 - **Summer associate**: excluded by default (a graduated 3L's summer window has
   passed); flip `include_summer_associate: true` to include 2L summer programs.
 - **Precision mode**: for far fewer, higher-confidence emails, delete

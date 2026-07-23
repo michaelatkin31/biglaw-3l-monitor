@@ -36,7 +36,20 @@ class Digest:
 
 def _group_by_firm(postings: list[Posting]) -> dict[str, list[Posting]]:
     grouped: dict[str, list[Posting]] = {}
+    seen: set[tuple[str, str, str, str]] = set()
     for p in postings:
+        # Collapse presentational duplicates: the same role can arrive under two
+        # job_ids (so both are "new") yet render as identical lines. Dedup by the
+        # visible fields, keeping the first. Different location/url => kept.
+        dedup_key = (
+            p.firm.lower(),
+            (p.title or "").lower().strip(),
+            (p.location or "").lower().strip(),
+            (p.url or "").lower().strip(),
+        )
+        if dedup_key in seen:
+            continue
+        seen.add(dedup_key)
         grouped.setdefault(p.firm, []).append(p)
     return {firm: grouped[firm] for firm in sorted(grouped)}
 
@@ -46,13 +59,14 @@ def render_digest(
 ) -> Digest:
     """Build a subject + text + HTML digest grouped by firm."""
     today = date.today().isoformat()
-    n = len(new_postings)
+    grouped = _group_by_firm(new_postings)
+    # Count the deduped postings actually shown, so the subject/header match the
+    # body (two job_ids for one visible role count once).
+    n = sum(len(posts) for posts in grouped.values())
     if n:
         subject = f"[BigLaw 3L Monitor] {n} new entry-level posting(s) — {today}"
     else:
         subject = f"[BigLaw 3L Monitor] No new postings — {today}"
-
-    grouped = _group_by_firm(new_postings)
 
     # --- plain text ---
     text_lines = [f"{n} new entry-level / 3L associate posting(s) as of {today}", ""]

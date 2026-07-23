@@ -141,10 +141,50 @@ matching.
   pollable." Playwright is **optional** and used only for firms explicitly marked
   `render: playwright`, to keep the CI run light.
 
+## 7b. Cutting lateral noise (description experience gate + normalization fixes)
+
+Live data (the postings emailed over two days) showed the recall-first net was
+~95% lateral: of 34 emails, exactly one was genuinely entry-level. Almost every
+lateral was a bare "X Associate" title whose real "N years" requirement lived in
+the **description**, not the title. Response:
+
+- **Description experience gate** (`core/filter.py` + `description_exclude_regexes`
+  in config). When a fetcher supplies a description, a stated years-of-experience
+  floor there disqualifies a seniority-silent title — unless an entry signal is
+  present anywhere in title+description. Kept **number-bearing only** (the bare
+  "years of experience" phrase is in nearly every description, entry-level
+  included) and **recall-safe** (floors starting at 0–1 are kept; no description
+  ⇒ never dropped by this gate). Patterns cover digits, ranges, "at least N",
+  and spelled-out counts ("two to four years", which slipped a digit-only first
+  cut). `Posting.description` is transient — used by the filter, **not** persisted
+  to `state.db` (identity is still `(firm, job_id)`), so no schema change.
+- **Description sources**: Greenhouse `content`, Lever/Ashby `descriptionPlain`,
+  career.page/jsonapi `description`, JSON-LD `description`. Fetchers whose listing
+  carries no body (Workday CXS, viRecruit, Radancy, browser, microdata) are
+  title-only unless a firm opts into `fetch_description: true` (generic fetcher
+  pulls each detail page; enabled for Kilpatrick, whose microdata cards omit the
+  body but whose detail pages state the floor). Measured effect on the
+  description-bearing firms: ~200 lateral roles gated out of ~550 fetched, and
+  Orrick/Seyfarth/Kilpatrick went from 9 lateral false-positives to 0.
+- **Normalization fixes** surfaced by the same data: WP-JSON `{'rendered': …}`
+  title/content wrappers are unwrapped (Dinsmore no longer emits a dict as its
+  title); a leading req-number prefix ("1029 - …") is stripped; the US-only geo
+  gate now also scans the **title** (Baker McKenzie renders the office there and
+  leaves location blank — Zurich/Geneva/London roles were slipping through).
+- **Digest dedup**: the same visible role arriving under two job_ids (both "new")
+  now renders once, and the subject count reflects the deduped total.
+
+Known ceiling: the big remaining un-gated buckets are Workday, viRecruit, and
+browser firms (no listing body, and viRecruit/browser have no cheap per-job URL
+to fetch). Extending the gate there (Workday has a CXS job-detail endpoint) is a
+sensible follow-up.
+
 ## 8. Runner / polite fetching
 
-- Daily cron at **12:00 UTC** (~7–8 AM ET depending on DST). GitHub cron is UTC;
-  edit for a fixed local hour.
+- Daily cron at **08:17 UTC** (~4 AM ET; ~3 AM in winter). Deliberately off the
+  hour: GitHub throttles the flood of jobs scheduled at `:00`, and the old
+  `0 12` run routinely fired ~90 min late (~10 AM ET). GitHub cron is UTC, so a
+  fixed local hour year-round isn't possible; edit the cron to shift it.
 - `state.db` is **committed back** to the repo by the Action (bot commit, empty-
   commit guarded). Chosen over Actions cache/artifact for simplicity and zero
   config for a personal tool.

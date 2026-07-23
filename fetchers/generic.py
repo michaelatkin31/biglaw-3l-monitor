@@ -27,11 +27,28 @@ import re
 from typing import Any
 
 from core.models import Posting
-from core.normalize import clean_text, normalize_jsonld_job
+from core.normalize import clean_description, clean_text, normalize_jsonld_job
 
 from .base import Fetcher, Firm
 
 log = logging.getLogger(__name__)
+
+# Content-region hints for a job detail page, tried in order. Slicing to the main
+# content before stripping avoids picking up experience-like noise from nav/footer.
+_CONTENT_REGION = re.compile(
+    r'<(?:main|article)\b[^>]*>(.*?)</(?:main|article)>'
+    r'|<div[^>]*class="[^"]*(?:entry-content|job-description|posting|single-job)[^"]*"[^>]*>(.*)',
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _detail_text(html: str) -> str:
+    """Best-effort plain text of a job detail page for the experience gate."""
+    if not html:
+        return ""
+    m = _CONTENT_REGION.search(html)
+    region = next((g for g in m.groups() if g), html) if m else html
+    return clean_description(region)
 
 _JSONLD_RE = re.compile(
     r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',
@@ -100,6 +117,7 @@ def extract_microdata_jobs(firm_name: str, html: str, page_url: str) -> list[Pos
             scope, "addressLocality"
         )
         posted = _microdata_prop(scope, "datePosted")
+        description = _microdata_prop(scope, "description")
         # A per-job URL is a stable id; fall back to firm+title when the card
         # has no link of its own (so every card still dedups sensibly).
         job_id = url if url != page_url else f"{firm_name}:{title}"
@@ -112,6 +130,7 @@ def extract_microdata_jobs(firm_name: str, html: str, page_url: str) -> list[Pos
                 url=url,
                 ats="generic",
                 posted_date=posted or None,
+                description=description,
             )
         )
     return postings
@@ -179,7 +198,37 @@ class GenericFetcher(Fetcher):
                 firm.name,
                 firm.careers_url,
             )
+
+        # Opt-in per firm: microdata/JSON-LD listings often omit the description
+        # (e.g. Kilpatrick's cards carry only title + datePosted), but the linked
+        # detail page states the experience requirement. When `fetch_description`
+        # is set, fetch each distinct detail page and attach its text so the
+        # filter's experience gate can act on it. Bounded by `description_limit`
+        # (default 40) to cap per-run requests; a failed/slow fetch just leaves
+        # the description empty (gate stays inactive for that posting).
+        if firm.options.get("fetch_description"):
+            postings = self._attach_descriptions(firm, postings)
         return postings
+
+    def _attach_descriptions(self, firm: Firm, postings: list[Posting]) -> list[Posting]:
+        import dataclasses
+
+        limit = int(firm.options.get("description_limit", 40))
+        cache: dict[str, str] = {}
+        out: list[Posting] = []
+        for i, p in enumerate(postings):
+            desc = p.description
+            url = p.url
+            if not desc and url and url.startswith("http") and url != firm.careers_url and i < limit:
+                if url not in cache:
+                    try:
+                        cache[url] = _detail_text(self.client.get_text(url) or "")
+                    except Exception as e:  # noqa: BLE001 - detail fetch is best-effort
+                        log.debug("%s: detail fetch failed for %s (%s)", firm.name, url, e)
+                        cache[url] = ""
+                desc = cache[url]
+            out.append(dataclasses.replace(p, description=desc) if desc else p)
+        return out
 
     def _render_with_playwright(self, url: str) -> str:
         try:

@@ -13,10 +13,10 @@ def _filter(**overrides):
     return PostingFilter(cfg)
 
 
-def _p(title, location=""):
+def _p(title, location="", description=""):
     return Posting(
         firm="Test Firm", job_id="1", title=title, location=location,
-        url="http://x", ats="greenhouse",
+        url="http://x", ats="greenhouse", description=description,
     )
 
 
@@ -120,6 +120,53 @@ def test_experience_exclusion_is_recall_safe():
     assert f.decide(_p("Associate (0-2 years)")).matched      # range starts at 0
     assert f.decide(_p("First-Year Associate")).matched
     assert f.decide(_p("2026 Associate")).matched
+
+
+def test_description_experience_gate_excludes_laterals():
+    # A title silent about seniority, but the DESCRIPTION states an experience
+    # floor -> lateral, dropped. Covers digit, "at least", range, spelled-out,
+    # and "N years of experience" phrasings (all seen in live descriptions).
+    f = _filter()
+    assert not f.decide(_p("Corporate Associate", description="We seek an associate with 3+ years of experience.")).matched
+    assert not f.decide(_p("Litigation Associate", description="Candidates must have at least 4 years in litigation.")).matched
+    assert not f.decide(_p("Trademark Associate", description="Requires 3-5 years of trademark practice.")).matched
+    # Orrick's real wording that slipped the digit-only patterns:
+    assert not f.decide(_p("Technology Transactions Associate", description="Seeking an associate with two to four years of experience.")).matched
+    assert not f.decide(_p("Real Estate Associate", description="The ideal candidate has at least six years of experience.")).matched
+    d = f.decide(_p("Corporate Associate", description="Minimum of 5 years required."))
+    assert not d.matched and "description regex" in d.reason
+
+
+def test_description_gate_is_recall_safe():
+    f = _filter()
+    # No description -> gate can't fire, ambiguous title still kept.
+    assert f.decide(_p("Corporate Associate", description="")).matched
+    # Low / entry-friendly ranges are kept.
+    assert f.decide(_p("Corporate Associate", description="Open to candidates with 0-2 years of experience.")).matched
+    assert f.decide(_p("Corporate Associate", description="1-3 years of experience welcome.")).matched
+    assert f.decide(_p("Corporate Associate", description="Ideal for someone with one year of experience.")).matched
+    # An explicit entry signal in the DESCRIPTION overrides an experience floor
+    # mentioned elsewhere in the same body (recall-safe).
+    assert f.decide(_p("Corporate Associate", description="This is an entry-level role; you'll work with partners who have 20 years of experience.")).matched
+    # "years of experience" with no number must NOT gate (it's in nearly every desc).
+    assert f.decide(_p("Corporate Associate", description="You will gain years of experience here.")).matched
+    # School references shouldn't gate.
+    assert f.decide(_p("Corporate Associate", description="Completed three years of law school.")).matched
+
+
+def test_description_gate_can_be_disabled():
+    f = _filter(experience_gate_description=False)
+    assert f.decide(_p("Corporate Associate", description="Requires 5+ years of experience.")).matched
+
+
+def test_geo_gate_catches_foreign_in_title():
+    # Baker McKenzie renders the office in the TITLE and leaves location blank;
+    # the geo gate must still drop it.
+    f = _filter()
+    assert not f.decide(_p("London • 3330 • 23-Jul-2026 • Attorney", location="")).matched
+    assert not f.decide(_p("Tax Lawyer (Zurich / Geneva)", location="")).matched
+    # But a US city in the title is kept.
+    assert f.decide(_p("Houston • 1234 • Attorney", location="")).matched
 
 
 def test_apply_returns_only_matches():
