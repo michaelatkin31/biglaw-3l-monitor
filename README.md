@@ -185,13 +185,19 @@ if you'd rather not commit a binary.
 ## Tuning the filter
 
 All keyword/regex lists live in `config.yaml` under `filters:` — no code edits
-needed. The filter is **recall-first** by design (this is a primary job-search
-net; missing a real posting is worse than showing a lateral one):
+needed. The daily email filter is **precision-first**:
 
-- **Include** (any match): the bare fee-earner words `associate` / `attorney` /
-  `lawyer` cast the wide net, plus explicit entry signals (`first-year
-  associate`, `entry-level associate`, `3L`, `junior associate`, `judicial
-  clerk`, class-year regexes like `Class of 2027` / `Class Years 2026`).
+- **Include** (any match): explicit new-grad signals such as `first-year
+  associate`, `entry-level associate`, `3L hiring`, `incoming associate`, and
+  the configured `target_class_years` (currently `2027`). Bare `associate`,
+  `attorney`, and `lawyer` titles are deliberately not emailed.
+- **Class-year conflict rule**: a generic `First-Year Associate` remains
+  eligible, but a title that explicitly names a non-target year (for example,
+  `2026 First Year Associate`) is rejected.
+- **Recruiting landing titles**: narrowly anchored `Entry-Level Recruiting`,
+  `Entry-Level Associate Opportunities`, and `3L Hiring` titles may override
+  the generic `recruiting` staff exclusion. A title such as `Entry-Level
+  Recruiting Coordinator` remains excluded.
 - **Exclude** (any match wins over include): seniority a 3L can't fill
   (`senior`, `mid-level`, `of counsel`, `partner`, `lateral`, `experienced`);
   non-attorney staff titles (`paralegal`, `coordinator`, `manager`, `analyst`,
@@ -210,18 +216,14 @@ net; missing a real posting is worse than showing a lateral one):
   viRecruit, Radancy, browser, microdata) are **title-only** unless the firm sets
   `fetch_description: true` (generic fetcher only — pulls each detail page; used
   for Kilpatrick). Tune via `description_exclude_regexes`.
-- **US-only geo gate** (`us_only: true`): drops postings whose location **or
-  title** names a foreign place and no US place (kills the London/Frankfurt/
-  Singapore trainee tail, including boards like Baker McKenzie that put the office
-  in the title and leave location blank). Recall-safe — ambiguous locations
-  ("3 Locations", a bare US city) are kept. Tune via `us_location_markers` /
-  `foreign_location_markers`.
+- **US-only geo gate** (`us_only: true`): ordinary US-focused boards drop known
+  foreign-only locations but retain ambiguous values. Global boards can set
+  `location_policy: require_us`; those postings must affirmatively name a
+  configured US city/state/country marker. Baker McKenzie uses this stricter
+  policy because its global board often leaves location blank and has emitted
+  Amsterdam, Zurich, London, and Bogotá roles.
 - **Summer associate**: excluded by default (a graduated 3L's summer window has
   passed); flip `include_summer_associate: true` to include 2L summer programs.
-- **Precision mode**: for far fewer, higher-confidence emails, delete
-  `associate`/`attorney`/`lawyer` from `include_keywords` — the explicit entry
-  signals then do the matching (but generically-titled entry roles get missed).
-
 Every fetched-but-filtered posting is logged at DEBUG (`-v`) so you can audit the
 false-negative rate.
 
@@ -236,6 +238,7 @@ Edit `firms.yaml`:
   careers_url: "https://www.example.com/careers"
   ats_type: greenhouse          # greenhouse|lever|workday|generic|careerpage|smartrecruiters|unknown
   ats_identifier: "examplellp"  # GH token | Lever slug | "tenant/site" (Workday) | career.page subdomain | SmartRecruiters company id
+  location_policy: require_us   # optional: global board must name a US office
   public_entry_level: unknown
   note: ""
 ```

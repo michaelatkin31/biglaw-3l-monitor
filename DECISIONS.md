@@ -114,16 +114,15 @@ matching.
   short "no new postings" note. This makes a delivered email double as a heartbeat
   confirming the monitor ran, rather than leaving silence ambiguous between "nothing
   new" and "the job broke." (Originally silent on empty days; changed by request.)
-- **Ranked digest**: postings with an entry-level signal (via
-  `PostingFilter.entry_score` — first-year/entry-level/class-year = 3,
-  junior/clerkship = 2, ambiguous bare associate = 0) are surfaced in a "Likely
-  entry-level" section at the top, highest-first; the rest go under "Other
-  associate roles" grouped by firm. Purely presentational — scoring never affects
-  include/exclude, and with nothing scoring the digest degrades to the plain
-  firm-grouped form so ordinary days look unchanged. Rationale: the description
-  gate cut the laterals, but on a busy day the one genuine first-year posting
-  could still be buried mid-list; ranking floats it to the top without dropping
-  anything.
+- **Precision-first daily digest**: only titles with an explicit 3L,
+  first-year, entry-level, incoming/new-associate, or configured target-class-year
+  signal are emailed. Bare `associate` / `attorney` / `lawyer` titles are no
+  longer recipient-facing. A July 22-28 replay reduced 76 historical candidates
+  to one applicable precision match. This deliberately accepts more false
+  negatives in exchange for making the daily email useful rather than noisy.
+- **Target year is configuration** (`target_class_years: [2027]`). Generic
+  `First-Year Associate` remains eligible, while an explicitly conflicting title
+  such as `2026 First Year Associate` is rejected.
 - `notify.py` splits **rendering** (`render_digest`) from **delivery**
   (`EmailNotifier` / `ConsoleNotifier`) behind a `Notifier` protocol, so a future
   read-only web UI over `state.db` — or a Slack channel — can reuse the renderer.
@@ -170,6 +169,11 @@ Live data (the postings emailed over two days) showed the recall-first net was
 lateral was a bare "X Associate" title whose real "N years" requirement lived in
 the **description**, not the title. Response:
 
+- The first response was a description experience gate, but later recipient
+  feedback showed title-only ATSs still produced too much noise. The final policy
+  is therefore precision-first: the experience gate remains a defensive check,
+  but ambiguous titles never reach the daily email in the first place.
+
 - **Description experience gate** (`core/filter.py` + `description_exclude_regexes`
   in config). When a fetcher supplies a description, a stated years-of-experience
   floor there disqualifies a seniority-silent title — unless an entry signal is
@@ -195,6 +199,13 @@ the **description**, not the title. Response:
   leaves location blank — Zurich/Geneva/London roles were slipping through).
 - **Digest dedup**: the same visible role arriving under two job_ids (both "new")
   now renders once, and the subject count reflects the deduped total.
+- **Firm-aware US policy**: known US-focused boards retain the recall-safe
+  foreign-marker rule, but a global board may set
+  `location_policy: require_us`. Baker McKenzie uses it because a global-board
+  title can have blank structured location and an office not present in any
+  finite blacklist (Bogotá was the motivating example). A bare `US` token is not
+  affirmative office evidence because titles like "US / International Tax
+  Lawyer (Zurich)" describe a practice, not a location.
 
 Known ceiling: the big remaining un-gated buckets are Workday, viRecruit, and
 browser firms (no listing body, and viRecruit/browser have no cheap per-job URL

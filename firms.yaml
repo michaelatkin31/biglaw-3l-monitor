@@ -374,6 +374,10 @@ firms:
     careers_url: "https://careers.bakermckenzie.com/en_US/opportunities/SearchJobs"
     ats_type: browser
     ats_identifier: "https://careers.bakermckenzie.com/en_US/opportunities/SearchJobs"
+    # This is a global board and often leaves the structured location blank.
+    # Require a named US city/state in title+location instead of trying to
+    # enumerate every foreign office (Bogotá was the motivating miss).
+    location_policy: require_us
     public_entry_level: true
     note: "RECOVERED 2026-07-20 via headless discovery (browser). Med confidence: Avature (careers.bakermckenzie.com/en_US/opportunities/SearchJobs + /TalentCommunity"
   - name: "Sheppard, Mullin, Richter & Hampton"
