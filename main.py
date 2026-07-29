@@ -16,6 +16,7 @@ try/except, logged, and recorded in the run summary.
 from __future__ import annotations
 
 import argparse
+import copy
 import logging
 import sys
 from pathlib import Path
@@ -77,6 +78,15 @@ def parse_args(argv=None) -> argparse.Namespace:
         help="Fetch + filter + WRITE state but never email. Use once on first "
         "setup so the initial real run doesn't email the entire current backlog.",
     )
+    p.add_argument(
+        "--history",
+        nargs="?",
+        const=20,
+        type=int,
+        default=None,
+        metavar="N",
+        help="Print the most recent N notification attempts and exit (default: 20).",
+    )
     p.add_argument("--firm", action="append", help="Only run these firm name(s).")
     p.add_argument("--limit", type=int, default=None, help="Only process first N firms.")
     p.add_argument("-v", "--verbose", action="store_true")
@@ -92,10 +102,67 @@ def select_firms(firms: list[Firm], args: argparse.Namespace) -> list[Firm]:
     return firms
 
 
+def build_shadow_filter(
+    filter_cfg: dict,
+    firm_location_policies: dict[str, str],
+) -> PostingFilter | None:
+    """Build the broad, non-emailing recall filter from the precision config."""
+    shadow = filter_cfg.get("shadow_recall", {})
+    if not shadow.get("enabled", False):
+        return None
+    shadow_cfg = copy.deepcopy(filter_cfg)
+    shadow_cfg["include_keywords"] = list(shadow.get("include_keywords", []))
+    shadow_cfg["include_regexes"] = []
+    shadow_cfg["priority_include_regexes"] = []
+    shadow_cfg["target_class_years"] = []
+    shadow_cfg["enforce_target_class_year"] = False
+    return PostingFilter(
+        shadow_cfg,
+        firm_location_policies=firm_location_policies,
+    )
+
+
+def print_history(store: DiffStore, limit: int) -> None:
+    runs = store.list_notification_runs(limit)
+    if not runs:
+        print("No exact notification audit rows yet.")
+    for audit_run in runs:
+        completed = f" -> {audit_run.completed_at}" if audit_run.completed_at else ""
+        print(
+            f"{audit_run.started_at}{completed} [{audit_run.status.upper()}] "
+            f"{audit_run.match_count} emailed / {audit_run.shadow_count} shadow"
+        )
+        print(f"  {audit_run.subject}")
+        for item in store.notification_items(audit_run.run_id):
+            location = f" — {item['location']}" if item["location"] else ""
+            print(f"  • {item['firm']} — {item['title']}{location}")
+            print(f"    {item['url']}")
+        if audit_run.error:
+            print(f"  ERROR: {audit_run.error}")
+
+    legacy = store.list_unlinked_seen(limit)
+    if legacy:
+        print(
+            "\nLegacy sent/seeded candidates (exact digest/status was not recorded "
+            "before this audit existed):"
+        )
+        for item in legacy:
+            location = f" — {item['location']}" if item["location"] else ""
+            print(
+                f"  {item['first_seen']} • {item['firm']} — "
+                f"{item['title']}{location}"
+            )
+
+
 def run(args: argparse.Namespace) -> int:
     config = load_yaml(Path(args.config))
-    firms = select_firms(load_firms(Path(args.firms)), args)
+    db_path = args.db or config.get("db_path", str(HERE / "state.db"))
+    if args.history is not None:
+        with DiffStore(db_path) as store:
+            print_history(store, args.history)
+        return 0
 
+    firms = select_firms(load_firms(Path(args.firms)), args)
     http_cfg = config.get("http", {})
     client = HttpClient(
         timeout=http_cfg.get("timeout", 20.0),
@@ -113,11 +180,16 @@ def run(args: argparse.Namespace) -> int:
         config.get("filters", {}),
         firm_location_policies=firm_location_policies,
     )
-
-    db_path = args.db or config.get("db_path", str(HERE / "state.db"))
+    shadow_filter = build_shadow_filter(
+        config.get("filters", {}),
+        firm_location_policies,
+    )
 
     summary = RunSummary()
     all_matches: list[Posting] = []
+    all_shadow_matches: list[Posting] = []
+    match_reasons: dict[tuple[str, str], str] = {}
+    shadow_reasons: dict[tuple[str, str], str] = {}
 
     for firm in firms:
         fetcher = get_fetcher(registry, firm.ats_type)
@@ -128,8 +200,33 @@ def run(args: argparse.Namespace) -> int:
             continue
         try:
             postings = fetcher.fetch(firm)
-            matched = posting_filter.apply(postings)
+            matched: list[Posting] = []
+            shadow_matched: list[Posting] = []
+            for posting in postings:
+                decision = posting_filter.decide(posting)
+                if decision.matched:
+                    matched.append(posting)
+                    match_reasons[posting.key()] = decision.reason
+                    continue
+                log.debug(
+                    "FILTERED[%s] %s -- %s",
+                    posting.firm,
+                    posting.title,
+                    decision.reason,
+                )
+                if shadow_filter is not None:
+                    shadow_decision = shadow_filter.decide(posting)
+                    if shadow_decision.matched:
+                        shadow_matched.append(posting)
+                        shadow_reasons[posting.key()] = shadow_decision.reason
+                        log.debug(
+                            "SHADOW [%s] %s -- %s",
+                            posting.firm,
+                            posting.title,
+                            shadow_decision.reason,
+                        )
             all_matches.extend(matched)
+            all_shadow_matches.extend(shadow_matched)
             summary.add(
                 FirmResult(
                     firm.name, firm.ats_type, ok=True,
@@ -145,6 +242,7 @@ def run(args: argparse.Namespace) -> int:
             summary.add(FirmResult(firm.name, firm.ats_type, ok=False, error=str(e)))
 
     client.close()
+    summary.shadow_matches = len({posting.key() for posting in all_shadow_matches})
 
     # --- diff against seen-state ---
     if args.dry_run:
@@ -154,14 +252,9 @@ def run(args: argparse.Namespace) -> int:
     else:
         with DiffStore(db_path) as store:
             new_matches = store.select_unseen(all_matches)
-            store.mark_seen(new_matches)
 
     summary.new_matches = len(new_matches)
     log.info("RUN SUMMARY: %s", summary.as_line())
-
-    if args.seed:
-        log.info("[SEED] Wrote %d matches to state; no email sent.", len(new_matches))
-        return 0
 
     # --- notify ---
     # Always send a digest, even on empty days, so a delivered email doubles as
@@ -170,15 +263,38 @@ def run(args: argparse.Namespace) -> int:
     if args.dry_run:
         log.info("[DRY-RUN] Would email %d new match(es):", len(new_matches))
         ConsoleNotifier().notify(digest)
-    else:
+        if all_shadow_matches:
+            log.info(
+                "[DRY-RUN] %d broader candidate(s) would be retained in shadow audit.",
+                summary.shadow_matches,
+            )
+        return 0
+
+    with DiffStore(db_path) as store:
+        run_id = store.begin_notification(
+            digest,
+            summary.as_line(),
+            new_matches,
+            shadow_postings=all_shadow_matches,
+            match_reasons=match_reasons,
+            shadow_reasons=shadow_reasons,
+            score_fn=posting_filter.entry_score,
+        )
+        if args.seed:
+            store.finish_notification(run_id, new_matches, status="seeded")
+            log.info("[SEED] Wrote %d matches to state; no email sent.", len(new_matches))
+            return 0
         try:
             notifier = EmailNotifier(SmtpConfig.from_env())
             notifier.notify(digest)
         except Exception as e:  # noqa: BLE001
             log.error("Failed to send email: %s", e)
-            # State was already written; surface via console so nothing is lost.
+            store.fail_notification(run_id, str(e))
+            # The audit is retained, but seen-state is intentionally untouched
+            # so the same postings remain eligible for the next successful run.
             ConsoleNotifier().notify(digest)
             return 1
+        store.finish_notification(run_id, new_matches, status="sent")
     return 0
 
 

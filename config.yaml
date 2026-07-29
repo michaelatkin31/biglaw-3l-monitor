@@ -26,6 +26,18 @@ filters:
   # says "2026 First Year Associate" is rejected for a class-of-2027 recipient.
   enforce_target_class_year: true
 
+  # Broader matches are retained in state.db for review, but never emailed.
+  # This is the safety net for measuring what precision-first filtering omits.
+  shadow_recall:
+    enabled: true
+    include_keywords:
+      - "associate"
+      - "attorney"
+      - "lawyer"
+      - "junior associate"
+      - "judicial clerk"
+      - "clerkship"
+
   # Toggle summer-associate roles on if you want them (default: off -- a
   # class-of-2026 grad's summer window has passed; summer postings are now for
   # rising 2Ls). Flip true if the search should include 2L summer programs.

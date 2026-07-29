@@ -100,13 +100,24 @@ scriptable) — deferred (see §9).
 
 ## 5. State / diff model
 
-`state.db` (SQLite) records **only postings that matched the filter** — i.e. the
-things we've already notified on — keyed by `(firm, job_id)` with a first-seen
-timestamp and the normalized fields. This gives notification idempotency (the
-point of the diff). Side effect: if a firm edits a previously-non-matching title
-into a matching one, it's (correctly) treated as new. We deliberately do **not**
-record every fetched job, to avoid suppressing a posting whose title later starts
-matching.
+`state.db` (SQLite) has four distinct responsibilities:
+
+- `seen_jobs` records only successfully sent or explicitly seeded precision
+  matches, keyed by `(firm, job_id)`.
+- `notification_runs` records the exact rendered digest and attempt status.
+- `notification_items` records the postings and reasons included in that digest.
+- `shadow_jobs` upserts broader recall candidates that were intentionally kept
+  out of the recipient-facing email.
+
+The pending audit row is created before SMTP. Only after SMTP accepts the
+message are its postings and the `sent` status committed in one transaction.
+On failure, the audit becomes `failed` and seen-state is untouched, so the
+postings retry on the next run. A `pending` row can also expose a process crash
+that happened between rendering and completion.
+
+Exact recipient addresses are intentionally omitted because the repository and
+database are public. Existing `seen_jobs` rows are retained as legacy evidence,
+but their original digest body and delivery outcome cannot be reconstructed.
 
 ## 6. Notification policy
 
@@ -123,6 +134,10 @@ matching.
 - **Target year is configuration** (`target_class_years: [2027]`). Generic
   `First-Year Associate` remains eligible, while an explicitly conflicting title
   such as `2026 First Year Associate` is rejected.
+- **Shadow recall remains broad**: bare associate/attorney/lawyer titles that
+  survive the staff, experience, summer, and geography gates are retained in
+  `shadow_jobs`. This makes the precision tradeoff measurable without sending
+  those roles to the recipient.
 - `notify.py` splits **rendering** (`render_digest`) from **delivery**
   (`EmailNotifier` / `ConsoleNotifier`) behind a `Notifier` protocol, so a future
   read-only web UI over `state.db` — or a Slack channel — can reuse the renderer.
@@ -219,7 +234,8 @@ sensible follow-up.
   `0 12` run routinely fired ~90 min late (~10 AM ET). GitHub cron is UTC, so a
   fixed local hour year-round isn't possible; edit the cron to shift it.
 - `state.db` is **committed back** to the repo by the Action (bot commit, empty-
-  commit guarded). Chosen over Actions cache/artifact for simplicity and zero
+  commit guarded), including after failed monitor steps so the failed-attempt
+  audit survives. Chosen over Actions cache/artifact for simplicity and zero
   config for a personal tool.
 - HTTP client: real browser User-Agent, 20s timeouts, 3 retries with exponential
   backoff, retryable on 429/5xx (incl. Workday's POST). Firms are fetched
