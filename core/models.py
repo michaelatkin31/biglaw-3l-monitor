@@ -58,6 +58,7 @@ class RunSummary:
     firms_failed: int = 0
     postings_seen: int = 0
     matches: int = 0
+    shadow_matches: int = 0
     new_matches: int = 0
     per_firm: list[FirmResult] = field(default_factory=list)
 
@@ -75,5 +76,6 @@ class RunSummary:
         return (
             f"firms: {self.firms_succeeded}/{self.firms_attempted} ok "
             f"({self.firms_failed} failed) | postings seen: {self.postings_seen} "
-            f"| matches: {self.matches} | new: {self.new_matches}"
+            f"| matches: {self.matches} | shadow: {self.shadow_matches} "
+            f"| new: {self.new_matches}"
         )

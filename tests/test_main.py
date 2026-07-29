@@ -25,6 +25,16 @@ class ExplodingFetcher(Fetcher):
         raise RuntimeError("boom")
 
 
+class SuccessfulNotifier:
+    sent = []
+
+    def __init__(self, _config):
+        pass
+
+    def notify(self, digest):
+        self.sent.append(digest)
+
+
 def _write_yaml(path, data):
     path.write_text(yaml.safe_dump(data))
 
@@ -72,24 +82,44 @@ def test_dry_run_does_not_write_state(tmp_path, monkeypatch, capsys):
     from core.diff import DiffStore
     with DiffStore(tmp / "state.db") as s:
         assert s.count() == 0
+        assert s.shadow_count() == 0
 
 
-def test_real_run_writes_state_and_is_idempotent(tmp_path, monkeypatch):
+def test_failed_send_is_audited_but_does_not_mark_seen(tmp_path, monkeypatch):
     posts = [Posting("Test Firm", "1", "Entry-Level Associate", "NY", "http://x/1", "greenhouse")]
     tmp = _setup(tmp_path, monkeypatch, FakeFetcher(None, posts))
-    # Force console notifier path by not setting SMTP env; dry-run=False but no
-    # SMTP -> EmailNotifier raises, main falls back to console + returns 1.
     monkeypatch.delenv("SMTP_HOST", raising=False)
     rc = main_mod.run(_args(tmp, dry_run=False))
-    # First run: one new match, email fails (no SMTP) -> rc 1 but state written.
     assert rc == 1
     from core.diff import DiffStore
     with DiffStore(tmp / "state.db") as s:
-        assert s.count() == 1
-    # Second run: nothing new, but we still send a heartbeat digest. With no
-    # SMTP configured the send fails and we fall back to console -> rc 1.
+        assert s.count() == 0
+        assert s.list_notification_runs()[0].status == "failed"
+    # It remains eligible for the next attempt.
     rc2 = main_mod.run(_args(tmp, dry_run=False))
     assert rc2 == 1
+    with DiffStore(tmp / "state.db") as s:
+        assert s.count() == 0
+        assert len(s.list_notification_runs()) == 2
+
+
+def test_successful_send_marks_state_and_is_idempotent(tmp_path, monkeypatch):
+    posts = [Posting("Test Firm", "1", "Entry-Level Associate", "NY", "http://x/1", "greenhouse")]
+    tmp = _setup(tmp_path, monkeypatch, FakeFetcher(None, posts))
+    SuccessfulNotifier.sent = []
+    monkeypatch.setattr(main_mod, "EmailNotifier", SuccessfulNotifier)
+    monkeypatch.setattr(main_mod.SmtpConfig, "from_env", lambda: object())
+
+    assert main_mod.run(_args(tmp, dry_run=False)) == 0
+    from core.diff import DiffStore
+    with DiffStore(tmp / "state.db") as s:
+        assert s.count() == 1
+        assert s.list_notification_runs()[0].status == "sent"
+
+    assert main_mod.run(_args(tmp, dry_run=False)) == 0
+    assert SuccessfulNotifier.sent[-1].match_count == 0
+    with DiffStore(tmp / "state.db") as s:
+        assert s.count() == 1
 
 
 def test_seed_writes_state_without_email(tmp_path, monkeypatch):
@@ -111,3 +141,9 @@ def test_one_firm_failure_does_not_abort(tmp_path, monkeypatch):
     tmp = _setup(tmp_path, monkeypatch, ExplodingFetcher(None))
     rc = main_mod.run(_args(tmp, dry_run=True))
     assert rc == 0  # failure logged, run completes, nothing to notify
+
+
+def test_history_does_not_fetch(tmp_path, monkeypatch, capsys):
+    tmp = _setup(tmp_path, monkeypatch, ExplodingFetcher(None))
+    assert main_mod.run(_args(tmp, history=5)) == 0
+    assert "No exact notification audit rows yet." in capsys.readouterr().out

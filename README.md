@@ -43,15 +43,13 @@ The pipeline per run:
    posted_date, ats}`.
 3. **Filter** by include/exclude keywords + class-year regexes + a description
    experience gate (see below).
-4. **Diff** against `state.db` — a posting is *new* if `(firm, job_id)` hasn't
-   been seen **and** it passes the filter. Re-running the same day emails
-   nothing (idempotent).
-5. **Notify** — one email digest, sent every run. Postings with an entry-level
-   signal (first-year / entry-level / class-year / 3L / clerkship) are surfaced
-   in a **"Likely entry-level"** section at the top, ranked highest-first; the
-   rest fall under "Other associate roles" grouped by firm. On empty days it
-   still emails a short "no new postings" note, so a delivered email doubles as a
-   heartbeat confirming the monitor ran.
+4. **Shadow-audit** broader associate/attorney/lawyer candidates in `state.db`
+   without putting them in the daily email.
+5. **Diff** precision matches against `state.db` — a posting is *new* if
+   `(firm, job_id)` has not been successfully sent or seeded.
+6. **Notify** — one precision-only email digest every run, including a short
+   heartbeat on empty days. The exact subject, text, HTML, included postings,
+   and SMTP outcome are recorded before seen-state is advanced.
 
 ---
 
@@ -139,10 +137,14 @@ python main.py --seed
 
 # Real run (needs SMTP env vars, see below):
 python main.py
+
+# Inspect exact recent delivery attempts plus legacy seen rows:
+python main.py --history       # latest 20
+python main.py --history 100
 ```
 
-CLI flags: `--dry-run`, `--seed`, `--firm NAME` (repeatable), `--limit N`,
-`--config`, `--firms`, `--db`, `-v/--verbose`.
+CLI flags: `--dry-run`, `--seed`, `--history [N]`, `--firm NAME` (repeatable),
+`--limit N`, `--config`, `--firms`, `--db`, `-v/--verbose`.
 
 ---
 
@@ -172,9 +174,27 @@ EDT / 7:00 AM ET during EST — GitHub cron is always UTC; edit the cron for a
 fixed local hour) and also supports **manual runs** (`workflow_dispatch`).
 
 State persistence: the workflow commits the updated `state.db` back to the repo
-after each run (bot commit, guarded against empty commits) so the next run diffs
-against it. Simple and free for a personal tool; swap to an Actions cache/artifact
-if you'd rather not commit a binary.
+after each run. The persistence step also runs after a monitor failure so a
+failed-send audit survives, while the included postings remain eligible for the
+next successful delivery.
+
+### Notification audit
+
+`state.db` now contains:
+
+- `notification_runs`: exact subject/text/HTML, summary, counts, timestamps,
+  and `pending` / `sent` / `failed` / `seeded` status.
+- `notification_items`: every posting included in a digest, with its filter
+  reason and entry score.
+- `shadow_jobs`: broader recall candidates excluded from recipient-facing mail,
+  upserted by `(firm, job_id)` so they do not grow once per day.
+- `seen_jobs`: only successfully sent or explicitly seeded postings.
+
+Recipient addresses and SMTP credentials are deliberately not stored because
+this repository and its committed SQLite database are public. `sent` means the
+configured SMTP server accepted the message; it cannot prove downstream inbox
+delivery. Rows already in `seen_jobs` predate exact digest auditing, but
+`--history` still displays recent legacy examples for reference.
 
 > **Activating the schedule:** GitHub only runs workflows found at the repository
 > root's `.github/workflows/`. If you keep this project as a subdirectory, move
