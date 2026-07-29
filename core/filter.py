@@ -32,9 +32,25 @@ class FilterDecision:
 
 
 class PostingFilter:
-    def __init__(self, filter_cfg: dict) -> None:
+    def __init__(
+        self,
+        filter_cfg: dict,
+        firm_location_policies: dict[str, str] | None = None,
+    ) -> None:
         self.include_keywords = [k.lower() for k in filter_cfg.get("include_keywords", [])]
         self.exclude_keywords = [k.lower() for k in filter_cfg.get("exclude_keywords", [])]
+        # A very small set of anchored titles represent recruiting/application
+        # landing pages rather than staff recruiting jobs. They may override
+        # explicitly configured soft excludes such as "recruiting", but never
+        # other staff-role excludes such as coordinator/manager/director.
+        self.priority_include_regexes = [
+            re.compile(p, re.IGNORECASE)
+            for p in filter_cfg.get("priority_include_regexes", [])
+        ]
+        self.priority_override_exclude_keywords = {
+            k.lower()
+            for k in filter_cfg.get("priority_override_exclude_keywords", [])
+        }
         self.summer_keywords = [
             k.lower() for k in filter_cfg.get("summer_associate_keywords", [])
         ]
@@ -63,6 +79,12 @@ class PostingFilter:
             for p in filter_cfg.get("description_exclude_regexes", [])
         ]
         self.entry_signals = [k.lower() for k in filter_cfg.get("entry_signal_keywords", [])]
+        self.target_class_years = {
+            int(year) for year in filter_cfg.get("target_class_years", [])
+        }
+        self.enforce_target_class_year = bool(
+            filter_cfg.get("enforce_target_class_year", bool(self.target_class_years))
+        )
         # Search title by default; optionally fold in location/other fields.
         self.search_fields = filter_cfg.get("search_fields", ["title"])
 
@@ -75,6 +97,11 @@ class PostingFilter:
         self.us_only = bool(filter_cfg.get("us_only", False))
         self.foreign_markers = [m.lower() for m in filter_cfg.get("foreign_location_markers", [])]
         self.us_markers = [m.lower() for m in filter_cfg.get("us_location_markers", [])]
+        self.firm_location_policies = {
+            name.lower(): policy.lower()
+            for name, policy in (firm_location_policies or {}).items()
+            if policy
+        }
 
     def _haystack(self, posting: Posting) -> str:
         parts = []
@@ -110,6 +137,52 @@ class PostingFilter:
         has_us = any(self._kw_hit(m, haystack) for m in self.us_markers)
         return not has_us
 
+    def _has_us_location(self, posting: Posting) -> bool:
+        """Return whether title/location affirmatively names a US office.
+
+        Deliberately does not treat a bare "US" token as enough: global practice
+        titles such as "US / International Tax Lawyer (Zurich)" use "US" to
+        describe the work, not the office. The configured city/state/country
+        markers are much stronger evidence.
+        """
+        loc = (getattr(posting, "location", "") or "").lower()
+        title = (getattr(posting, "title", "") or "").lower()
+        haystack = f"{loc} {title}".strip()
+        return bool(haystack) and any(
+            self._kw_hit(marker, haystack) for marker in self.us_markers
+        )
+
+    def _location_policy(self, posting: Posting) -> str:
+        return self.firm_location_policies.get(
+            posting.firm.lower(), "exclude_known_foreign"
+        )
+
+    def _priority_include(self, title_text: str) -> bool:
+        return any(rx.search(title_text) for rx in self.priority_include_regexes)
+
+    def _has_target_year_signal(self, title_text: str) -> bool:
+        """Match a configured class year only when it is tied to hiring/JD."""
+        for year in self.target_class_years:
+            y = re.escape(str(year))
+            if re.search(
+                rf"\b{y}\b[^.\n]{{0,40}}\b(?:associate|jd|class|graduate|hiring)\b",
+                title_text,
+                re.IGNORECASE,
+            ) or re.search(
+                rf"\b(?:associate|jd|class|graduate|hiring)\b[^.\n]{{0,40}}\b{y}\b",
+                title_text,
+                re.IGNORECASE,
+            ):
+                return True
+        return False
+
+    @staticmethod
+    def _near_future_years(title_text: str) -> set[int]:
+        return {
+            int(year)
+            for year in re.findall(r"\b20(?:2[5-9]|3\d)\b", title_text)
+        }
+
     def _signal_text(self, posting: Posting) -> str:
         """Lowercased title + description -- where entry signals are looked for."""
         text = self._haystack(posting)
@@ -137,8 +210,11 @@ class PostingFilter:
         """0 = ambiguous (bare associate/attorney); 2 = a junior/clerkship signal;
         3 = an explicit first-year/entry-level/class-year signal."""
         hay = self._signal_text(posting)
-        if any(rx.search(hay) for rx in self.include_regexes) or any(
-            self._kw_hit(k, hay) for k in self._STRONG_SIGNALS
+        if (
+            self._has_target_year_signal(self._haystack(posting))
+            or self._priority_include(self._haystack(posting))
+            or any(rx.search(hay) for rx in self.include_regexes)
+            or any(self._kw_hit(k, hay) for k in self._STRONG_SIGNALS)
         ):
             return 3
         if any(self._kw_hit(k, hay) for k in self._MED_SIGNALS):
@@ -147,10 +223,16 @@ class PostingFilter:
 
     def decide(self, posting: Posting) -> FilterDecision:
         text = self._haystack(posting)
+        priority_include = self._priority_include(text)
 
         # Exclude wins first.
         for kw in self.exclude_keywords:
             if self._kw_hit(kw, text):
+                if (
+                    priority_include
+                    and kw in self.priority_override_exclude_keywords
+                ):
+                    continue
                 return FilterDecision(False, f"excluded by keyword: {kw!r}")
 
         # A confident entry signal ("entry-level", "first-year", "class of 2026",
@@ -159,7 +241,28 @@ class PostingFilter:
         # "entry-level" keeps a generically-titled role.
         description = (getattr(posting, "description", "") or "").lower()
         signal_text = self._signal_text(posting)
-        has_entry_signal = self._has_entry_signal(signal_text)
+        target_year_signal = self._has_target_year_signal(text)
+        has_entry_signal = (
+            self._has_entry_signal(signal_text)
+            or target_year_signal
+            or priority_include
+        )
+        # A generic first-year/entry-level title remains eligible when it has no
+        # year. If it explicitly names a class year, however, it must include a
+        # configured target year. This prevents "2026 First Year Associate" from
+        # reaching a class-of-2027 recipient.
+        title_years = self._near_future_years(text)
+        if (
+            self.enforce_target_class_year
+            and has_entry_signal
+            and title_years
+            and self.target_class_years.isdisjoint(title_years)
+        ):
+            return FilterDecision(
+                False,
+                "excluded by non-target class year: "
+                + ", ".join(str(year) for year in sorted(title_years)),
+            )
         # Experience-based excludes: a title stating years of experience / an
         # ordinal year (2nd+) is definitionally not entry-level. Recall-safe --
         # ambiguous "Corporate Associate" (no experience stated) still passes.
@@ -179,8 +282,21 @@ class PostingFilter:
         # US-only geo gate: drop clearly-foreign postings before include matching
         # so a recall-first keyword net doesn't surface London/Milan/Singapore
         # trainee & NQ programmes to a US 3L.
-        if self.us_only and self._is_foreign_only(posting):
-            return FilterDecision(False, f"excluded non-US location: {posting.location!r}")
+        if self.us_only:
+            location_policy = self._location_policy(posting)
+            if location_policy == "require_us" and not self._has_us_location(posting):
+                return FilterDecision(
+                    False,
+                    "excluded without affirmative US office "
+                    f"(firm policy=require_us): {posting.location!r}",
+                )
+            if (
+                location_policy != "require_us"
+                and self._is_foreign_only(posting)
+            ):
+                return FilterDecision(
+                    False, f"excluded non-US location: {posting.location!r}"
+                )
 
         # Summer roles: excluded by default, but when the toggle is on they
         # become *includes* (merely un-excluding them would leave nothing to
@@ -193,6 +309,12 @@ class PostingFilter:
             for kw in self.summer_keywords:
                 if self._kw_hit(kw, text):
                     return FilterDecision(True, f"included summer role: {kw!r}")
+
+        if priority_include:
+            return FilterDecision(True, "included by priority title pattern")
+
+        if target_year_signal:
+            return FilterDecision(True, "included by target class year")
 
         for kw in self.include_keywords:
             if self._kw_hit(kw, text):

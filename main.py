@@ -104,7 +104,15 @@ def run(args: argparse.Namespace) -> int:
         user_agent=http_cfg.get("user_agent") or DEFAULT_UA,
     )
     registry = build_registry(client)
-    posting_filter = PostingFilter(config.get("filters", {}))
+    firm_location_policies = {
+        firm.name: firm.options.get("location_policy")
+        for firm in firms
+        if firm.options.get("location_policy")
+    }
+    posting_filter = PostingFilter(
+        config.get("filters", {}),
+        firm_location_policies=firm_location_policies,
+    )
 
     db_path = args.db or config.get("db_path", str(HERE / "state.db"))
 

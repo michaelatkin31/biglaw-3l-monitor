@@ -11,20 +11,20 @@ http:
 
 filters:
   # ---------------------------------------------------------------------------
-  # RECALL-FIRST design (this tool is a PRIMARY job-search net for a US 3L).
+  # PRECISION-FIRST design (daily email for a class-of-2027 US 3L).
   #
-  # Reality check from live data: BigLaw public ATS boards almost never title a
-  # posting "first-year associate" -- entry-level hiring runs through OCI /
-  # summer programs, and the public boards are dominated by *lateral* associate
-  # roles named only by practice area ("Real Estate Associate (New York)"). A
-  # precision filter keyed on "first-year"/"entry-level" therefore matches ~0
-  # real postings. So instead we cast a wide net -- ANY US associate/attorney/
-  # lawyer role -- and merely subtract the roles a graduating 3L plainly cannot
-  # take (senior/mid-level/of-counsel/partner) and all non-fee-earner staff.
-  # Better to skim a few lateral roles than silently miss the rare entry role.
-  #
-  # Want fewer, higher-precision hits instead? See "PRECISION MODE" note below.
+  # The original recall-first filter emailed every bare associate/attorney/lawyer
+  # title. A replay of the July 22-28 notification candidates found only two
+  # explicit entry-level titles among 76 rows. Daily email now requires a strong
+  # 3L / first-year / entry-level / target-class-year signal. Ambiguous roles can
+  # still be retained by the notification audit's shadow-recall path, but are not
+  # sent to the recipient.
   # ---------------------------------------------------------------------------
+
+  target_class_years: [2027]
+  # Generic "First-Year Associate" remains eligible, but a title that explicitly
+  # says "2026 First Year Associate" is rejected for a class-of-2027 recipient.
+  enforce_target_class_year: true
 
   # Toggle summer-associate roles on if you want them (default: off -- a
   # class-of-2026 grad's summer window has passed; summer postings are now for
@@ -40,14 +40,12 @@ filters:
   # Search these Posting fields for keyword/regex matches.
   search_fields: [title]
 
-  # ANY of these (word-boundary matched) => candidate include. The three bare
-  # fee-earner words are the wide net; the rest are explicit entry signals kept
-  # so they still match even if the exclude list is later tightened.
+  # ANY of these (word-boundary matched) => candidate include. These mirror the
+  # titles the recipient sees for genuine new-grad opportunities. Bare
+  # associate/attorney/lawyer words are intentionally absent.
   include_keywords:
-    - "associate"
-    - "attorney"
-    - "lawyer"
     - "first-year associate"
+    - "first year associate"
     - "entry-level associate"
     - "entry level associate"
     - "new grad"
@@ -55,12 +53,11 @@ filters:
     - "3l"
     - "entering class"
     - "incoming associate"
-    - "junior associate"
-    - "judicial clerk"
-    - "clerkship"
+    - "new associate"
 
-  # A confident entry signal here OVERRIDES the experience-based exclude_regexes
+  # A confident entry signal here OVERRIDES the experience-based regex gates
   # below (so e.g. "Entry-Level Associate (0-2 years)" is kept, not dropped).
+  # It does not generally override staff-role keywords.
   entry_signal_keywords:
     - "entry-level"
     - "entry level"
@@ -70,8 +67,19 @@ filters:
     - "new grad"
     - "new graduate"
     - "incoming associate"
+    - "new associate"
+    - "entering class"
     - "3l"
-    - "judicial clerk"
+
+  # These anchored recruiting-page titles are genuine entry application
+  # surfaces, not recruiting staff jobs. Only the "recruiting" exclusion may be
+  # overridden; "Entry-Level Recruiting Coordinator" still fails on coordinator.
+  priority_include_regexes:
+    - '^\s*entry[- ]level recruiting(?: opportunities)?\s*$'
+    - '^\s*entry[- ]level associate opportunities?\s*$'
+    - '^\s*3l hiring(?: opportunities)?\s*$'
+  priority_override_exclude_keywords:
+    - "recruiting"
 
   # ANY of these => EXCLUDE (a role that states experience is not entry-level).
   # These are the "obviously not a new grad" signals; ambiguous titles with no
@@ -115,15 +123,14 @@ filters:
     - '(?:at least|minimum|min\.?\s*of|least|with|about|approximately|over)\s+(?:two|three|four|five|six|seven|eight|nine|ten)\s*\+?\s*(?:years?|yrs?)'  # "at least two years"
     - '(?<!\w)(?:two|three|four|five|six|seven|eight|nine|ten)\s*\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:relevant\s+|prior\s+|practice\s+|legal\s+|professional\s+|law[\s-]firm\s+|post[\s-]?(?:qualification|jd|graduate)\s+)?(?:experience|exp|practicing)\b(?!\s+(?:of\s+)?(?:law\s+)?school)'  # "two years of experience"
 
-  # ANY of these regexes => candidate include (class-year / junior phrasings the
-  # bare keywords might miss in unusual word order).
+  # Additional explicit entry phrasings. Target-class-year matching is generated
+  # from target_class_years in code so advancing the year is a one-line config
+  # change rather than a regex rewrite.
   include_regexes:
-    - '\bclass of 20(2[5-9]|3\d)\b'
-    - '\bclass years?\s+20(2[5-9]|3\d)\b'    # e.g. "Class Years 2026-2025"
-    - '\b20(2[5-9]|3\d)\s+(incoming\s+)?associate'
-    - '\bassociate[^.\n]{0,25}\b20(2[5-9]|3\d)\b'
+    - '\bentry[- ]level\b[^.\n]{0,50}\bassociate\b'
+    - '\bentry[- ]level associate opportunities?\b'
+    - '\b3l hiring\b'
     - '\bentering\s+class\b'
-    - '\bjunior[- ]?level\b'
 
   # ANY of these => excluded, and exclude ALWAYS beats include. Two groups:
   #  (a) seniority a graduating 3L cannot fill; (b) non-attorney staff titles
@@ -185,11 +192,6 @@ filters:
     - "stagiaire"
     - "solicitor"
     - "trainee"
-
-  # PRECISION MODE: to instead receive only high-confidence entry-level hits,
-  # delete "associate"/"attorney"/"lawyer" from include_keywords above. The
-  # explicit entry signals + regexes then do the matching (far fewer emails,
-  # but generically-titled entry roles will be missed).
 
   # Excluded unless include_summer_associate is true.
   summer_associate_keywords:
@@ -338,6 +340,9 @@ filters:
     - "sao paulo"
     - "são paulo"
     - "brazil"
+    - "colombia"
+    - "bogota"
+    - "bogotá"
     - "johannesburg"
     - "south africa"
     - "sydney"

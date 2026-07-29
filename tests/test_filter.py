@@ -7,10 +7,10 @@ from core.models import Posting
 ROOT = Path(__file__).resolve().parent.parent
 
 
-def _filter(**overrides):
+def _filter(firm_location_policies=None, **overrides):
     cfg = yaml.safe_load((ROOT / "config.yaml").read_text())["filters"]
     cfg.update(overrides)
-    return PostingFilter(cfg)
+    return PostingFilter(cfg, firm_location_policies=firm_location_policies)
 
 
 def _p(title, location="", description=""):
@@ -30,8 +30,9 @@ def test_includes_first_year_associate():
 def test_class_year_regex():
     f = _filter()
     assert f.decide(_p("2027 Associate - Class of 2027")).matched
-    assert f.decide(_p("Associate (Entering Class 2028)")).matched
-    assert f.decide(_p("Class of 2026 Corporate Associate")).matched
+    assert f.decide(_p("Associate (Entering Class 2027)")).matched
+    assert not f.decide(_p("Associate (Entering Class 2028)")).matched
+    assert not f.decide(_p("Class of 2026 Corporate Associate")).matched
 
 
 def test_exclude_beats_include():
@@ -60,12 +61,41 @@ def test_short_token_word_boundary():
     assert not f.decide(_p("Global Mobility Coordinator")).matched
 
 
-def test_recall_first_plain_associate_matches():
-    # Recall-first design: a bare US associate/attorney role DOES match (we would
-    # rather surface a lateral role than miss a generically-titled entry role).
+def test_precision_mode_drops_plain_associate_titles():
+    # Precision-first daily email: ambiguous fee-earner titles are shadow-audit
+    # material, not recipient-facing matches.
     f = _filter()
-    assert f.decide(_p("Corporate Associate")).matched
-    assert f.decide(_p("Litigation Attorney", "New York, NY")).matched
+    assert not f.decide(_p("Corporate Associate")).matched
+    assert not f.decide(_p("Litigation Attorney", "New York, NY")).matched
+
+
+def test_recipient_requested_precision_titles():
+    f = _filter()
+    titles = [
+        "2027 Entry-Level Associate",
+        "Fall 2027 Associate",
+        "3L Hiring",
+        "Entry-Level Associate Opportunities",
+        "Entry-Level Recruiting",
+        "First-Year Associate",
+        "Incoming Associate",
+        "New Associate",
+        "Associate (2027 JD)",
+        "Associate – Class of 2027",
+    ]
+    for title in titles:
+        decision = f.decide(_p(title))
+        assert decision.matched, (title, decision.reason)
+
+    # The narrow landing-page exception must not admit a recruiting staff job.
+    assert not f.decide(_p("Entry-Level Recruiting Coordinator")).matched
+
+
+def test_explicit_non_target_year_beats_generic_entry_signal():
+    f = _filter()
+    assert f.decide(_p("First-Year Associate")).matched
+    assert not f.decide(_p("2026 First Year Associate - Corporate")).matched
+    assert not f.decide(_p("Entry-Level Associate, Class of 2028")).matched
 
 
 def test_recall_first_seniority_guardrails():
@@ -82,22 +112,22 @@ def test_recall_first_seniority_guardrails():
 def test_us_only_geo_gate():
     f = _filter()  # config default us_only: true
     # Clearly-foreign location + no US marker => dropped.
-    d = f.decide(_p("Corporate Associate", "London, United Kingdom"))
+    d = f.decide(_p("Entry-Level Associate", "London, United Kingdom"))
     assert not d.matched and "non-US" in d.reason
-    d = f.decide(_p("Associate", "Amsterdam, Netherlands"))
+    d = f.decide(_p("Entry-Level Associate", "Amsterdam, Netherlands"))
     assert not d.matched
     # A US location is kept.
-    assert f.decide(_p("Corporate Associate", "New York, NY")).matched
+    assert f.decide(_p("Entry-Level Associate", "New York, NY")).matched
     # Recall-safe: ambiguous / multi-location strings are NOT treated as foreign.
-    assert f.decide(_p("Corporate Associate", "3 Locations")).matched
-    assert f.decide(_p("Corporate Associate", "")).matched
+    assert f.decide(_p("Entry-Level Associate", "3 Locations")).matched
+    assert f.decide(_p("Entry-Level Associate", "")).matched
     # A role naming BOTH a foreign and a US office is kept (US-inclusive).
-    assert f.decide(_p("Corporate Associate", "New York or London")).matched
+    assert f.decide(_p("Entry-Level Associate", "New York or London")).matched
 
 
 def test_us_only_can_be_disabled():
     f = _filter(us_only=False)
-    assert f.decide(_p("Corporate Associate", "London, United Kingdom")).matched
+    assert f.decide(_p("Entry-Level Associate", "London, United Kingdom")).matched
 
 
 def test_experience_stated_roles_excluded():
@@ -112,7 +142,7 @@ def test_experience_stated_roles_excluded():
 
 
 def test_experience_exclusion_is_recall_safe():
-    f = _filter()
+    f = _filter(include_keywords=["associate", "first-year associate", "entry-level associate"])
     # ambiguous (no experience stated) -> still kept
     assert f.decide(_p("Corporate Associate")).matched
     # low ranges / entry signals win over the experience exclude
@@ -126,7 +156,7 @@ def test_description_experience_gate_excludes_laterals():
     # A title silent about seniority, but the DESCRIPTION states an experience
     # floor -> lateral, dropped. Covers digit, "at least", range, spelled-out,
     # and "N years of experience" phrasings (all seen in live descriptions).
-    f = _filter()
+    f = _filter(include_keywords=["associate"])
     assert not f.decide(_p("Corporate Associate", description="We seek an associate with 3+ years of experience.")).matched
     assert not f.decide(_p("Litigation Associate", description="Candidates must have at least 4 years in litigation.")).matched
     assert not f.decide(_p("Trademark Associate", description="Requires 3-5 years of trademark practice.")).matched
@@ -138,7 +168,7 @@ def test_description_experience_gate_excludes_laterals():
 
 
 def test_description_gate_is_recall_safe():
-    f = _filter()
+    f = _filter(include_keywords=["associate", "entry-level associate"])
     # No description -> gate can't fire, ambiguous title still kept.
     assert f.decide(_p("Corporate Associate", description="")).matched
     # Low / entry-friendly ranges are kept.
@@ -155,7 +185,10 @@ def test_description_gate_is_recall_safe():
 
 
 def test_description_gate_can_be_disabled():
-    f = _filter(experience_gate_description=False)
+    f = _filter(
+        experience_gate_description=False,
+        include_keywords=["associate"],
+    )
     assert f.decide(_p("Corporate Associate", description="Requires 5+ years of experience.")).matched
 
 
@@ -163,10 +196,30 @@ def test_geo_gate_catches_foreign_in_title():
     # Baker McKenzie renders the office in the TITLE and leaves location blank;
     # the geo gate must still drop it.
     f = _filter()
-    assert not f.decide(_p("London • 3330 • 23-Jul-2026 • Attorney", location="")).matched
-    assert not f.decide(_p("Tax Lawyer (Zurich / Geneva)", location="")).matched
+    assert not f.decide(
+        _p("London • 3330 • 23-Jul-2026 • 3L Associate", location="")
+    ).matched
+    assert not f.decide(
+        _p("3L Hiring - Tax Associate (Zurich / Geneva)", location="")
+    ).matched
     # But a US city in the title is kept.
-    assert f.decide(_p("Houston • 1234 • Attorney", location="")).matched
+    assert f.decide(_p("Houston • 1234 • 3L Associate", location="")).matched
+
+
+def test_require_us_policy_needs_affirmative_us_office():
+    policies = {"Test Firm": "require_us"}
+    f = _filter(
+        firm_location_policies=policies,
+        include_keywords=["associate", "attorney", "lawyer"],
+    )
+    assert f.decide(_p("Chicago • 3333 • Attorney", location="")).matched
+    assert f.decide(_p("Associate", location="New York or London")).matched
+    assert not f.decide(_p("Associate", location="Amsterdam, Netherlands")).matched
+    assert not f.decide(_p("Bogotá • 3206 • Attorney", location="")).matched
+    assert not f.decide(
+        _p("US / International Tax Lawyer (Zurich / Geneva)", location="")
+    ).matched
+    assert not f.decide(_p("Junior Associate Indirect Tax", location="")).matched
 
 
 def test_entry_score_ranks_signals():
