@@ -17,6 +17,7 @@ from .ashby import AshbyFetcher
 from .base import Fetcher
 from .browser import BrowserFetcher
 from .careerpage import CareerPageFetcher
+from .entrypage import EntryPageFetcher
 from .generic import GenericFetcher
 from .greenhouse import GreenhouseFetcher
 from .jsonapi import JsonApiFetcher
@@ -25,6 +26,22 @@ from .radancy import RadancyFetcher
 from .smartrecruiters import SmartRecruitersFetcher
 from .virecruit import ViRecruitFetcher
 from .workday import WorkdayFetcher
+
+SUPPORTED_ATS_TYPES = frozenset(
+    {
+        "greenhouse",
+        "lever",
+        "workday",
+        "generic",
+        "careerpage",
+        "smartrecruiters",
+        "virecruit",
+        "radancy",
+        "ashby",
+        "jsonapi",
+        "browser",
+    }
+)
 
 
 def build_registry(client: HttpClient) -> dict[str, Fetcher]:
@@ -54,6 +71,7 @@ __all__ = [
     "WorkdayFetcher",
     "GenericFetcher",
     "CareerPageFetcher",
+    "EntryPageFetcher",
     "SmartRecruitersFetcher",
     "ViRecruitFetcher",
     "RadancyFetcher",
@@ -62,4 +80,5 @@ __all__ = [
     "BrowserFetcher",
     "build_registry",
     "get_fetcher",
+    "SUPPORTED_ATS_TYPES",
 ]

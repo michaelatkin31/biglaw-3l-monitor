@@ -60,6 +60,9 @@ class RunSummary:
     matches: int = 0
     shadow_matches: int = 0
     new_matches: int = 0
+    entry_pages_attempted: int = 0
+    entry_pages_succeeded: int = 0
+    entry_pages_failed: int = 0
     per_firm: list[FirmResult] = field(default_factory=list)
 
     def add(self, r: FirmResult) -> None:
@@ -72,10 +75,26 @@ class RunSummary:
         self.postings_seen += r.fetched
         self.matches += r.matched
 
+    def add_entry_page(self, *, ok: bool, fetched: int = 0, matched: int = 0) -> None:
+        self.entry_pages_attempted += 1
+        if ok:
+            self.entry_pages_succeeded += 1
+        else:
+            self.entry_pages_failed += 1
+        self.postings_seen += fetched
+        self.matches += matched
+
     def as_line(self) -> str:
-        return (
+        line = (
             f"firms: {self.firms_succeeded}/{self.firms_attempted} ok "
             f"({self.firms_failed} failed) | postings seen: {self.postings_seen} "
             f"| matches: {self.matches} | shadow: {self.shadow_matches} "
             f"| new: {self.new_matches}"
         )
+        if self.entry_pages_attempted:
+            line += (
+                f" | entry pages: {self.entry_pages_succeeded}/"
+                f"{self.entry_pages_attempted} ok "
+                f"({self.entry_pages_failed} failed)"
+            )
+        return line

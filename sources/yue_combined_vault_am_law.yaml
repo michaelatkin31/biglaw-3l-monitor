@@ -1,0 +1,256 @@
+# Recipient-supplied Combined Vault 100 + Am Law 200 reference list.
+#
+# Received 2026-07-28. The source numbering contained a blank item 155, so this
+# file has 163 actual names. This is a reconciliation input, not a replacement
+# for the larger live-verified registry in firms.yaml.
+source: "Recipient-supplied Combined Vault 100 + Am Law 200 list"
+received: "2026-07-28"
+notes:
+  - "The original numbered list had a blank item 155."
+  - "Legacy names are resolved through aliases below instead of being polled twice."
+
+aliases:
+  Akin: "Akin Gump Strauss Hauer & Feld"
+  Arnold & Porter: "Arnold & Porter Kaye Scholer"
+  Baker Donelson: "Baker Donelson Bearman Caldwell & Berkowitz PC"
+  BakerHostetler: "BakerHostetler"
+  Barnes & Thornburg: "Barnes & Thornburg"
+  Bass, Berry & Sims: "Bass, Berry & Sims PLC"
+  Benesch: "Benesch, Friedlander, Coplan & Aronoff LLP"
+  Bradley Arant Boult Cummings: "Bradley Arant Boult Cummings LLP"
+  Brownstein Hyatt Farber Schreck: "Brownstein Hyatt Farber Schreck LLP"
+  Butler Snow: "Butler Snow LLP"
+  Carlton Fields: "Carlton Fields PA"
+  Clark Hill: "Clark Hill PLC"
+  Dickinson Wright: "Dickinson Wright PLLC"
+  Dorsey & Whitney: "Dorsey & Whitney LLP"
+  Fennemore: "Fennemore Craig"
+  Freshfields: "Freshfields US"
+  Fried Frank: "Fried, Frank, Harris, Shriver & Jacobson"
+  Gibson Dunn: "Gibson, Dunn & Crutcher"
+  Goodwin: "Goodwin Procter"
+  Gordon Rees: "Gordon Rees Scully Mansukhani"
+  Haynes Boone: "Haynes and Boone"
+  Kilpatrick Townsend: "Kilpatrick Townsend & Stockton"
+  Kellogg Hansen: "Kellogg, Hansen, Todd, Figel & Frederick"
+  Lane Powell: "Ballard Spahr"
+  Lewis Brisbois: "Lewis Brisbois Bisgaard & Smith"
+  Lewis Roca: "Womble Bond Dickinson (US)"
+  Littler Mendelson: "Littler Mendelson"
+  Locke Lord: "Troutman Pepper Locke"
+  Mayer Brown: "Mayer Brown"
+  McDermott Will & Schulte: "McDermott Will & Schulte"
+  Michael Best: "Michael Best & Friedrich"
+  Mintz: "Mintz, Levin, Cohn, Ferris, Glovsky and Popeo"
+  Morgan Lewis: "Morgan, Lewis & Bockius"
+  Morrison Foerster: "Morrison & Foerster"
+  Munger Tolles: "Munger, Tolles & Olson"
+  Morris Manning: "Morris, Manning & Martin"
+  Nelson Mullins: "Nelson Mullins Riley & Scarborough"
+  Nexsen Pruet: "Maynard Nexsen PC"
+  Norton Rose Fulbright: "Norton Rose Fulbright"
+  Nutter: "Nutter McClennen & Fish"
+  Orrick: "Orrick, Herrington & Sutcliffe"
+  Parker Poe: "Parker Poe Adams & Bernstein"
+  Paul Weiss: "Paul, Weiss, Rifkind, Wharton & Garrison"
+  Pillsbury: "Pillsbury Winthrop Shaw Pittman"
+  Quinn Emanuel: "Quinn Emanuel Urquhart & Sullivan"
+  Ropes & Gray: "Ropes & Gray"
+  Schulte Roth & Zabel: "Schulte Roth & Zabel"
+  Schwabe: "Schwabe, Williamson & Wyatt"
+  Sheppard Mullin: "Sheppard, Mullin, Richter & Hampton"
+  Shook Hardy: "Shook, Hardy & Bacon"
+  Simpson Thacher: "Simpson Thacher & Bartlett"
+  Skadden: "Skadden, Arps, Slate, Meagher & Flom"
+  Smith Gambrell: "Smith Gambrell & Russell"
+  Snell & Wilmer: "Snell & Wilmer"
+  Stoel Rives: "Stoel Rives LLP"
+  Taft: "Taft Stettinius & Hollister"
+  Vedder Price: "Vedder Price PC"
+  Wachtell: "Wachtell, Lipton, Rosen & Katz"
+  Waller Lansden: "Holland & Knight"
+  Weil: "Weil, Gotshal & Manges"
+  Willkie Farr: "Willkie Farr & Gallagher"
+  WilmerHale: "WilmerHale"
+  Wilson Sonsini: "Wilson Sonsini Goodrich & Rosati"
+  Winston & Strawn: "Winston & Strawn"
+  Womble Bond Dickinson: "Womble Bond Dickinson (US)"
+  Woods Rogers: "Woods Rogers Vandeventer Black"
+  Young Conaway: "Young Conaway Stargatt & Taylor"
+  Ulmer & Berne: "UB Greensfelder"
+
+alias_notes:
+  Lane Powell:
+    reason: "Combined into Ballard Spahr effective 2025-01-01."
+    source: "https://www.ballardspahr.com/insights/news/2025/01/ballard-spahr-and-lane-powell-finalize-combination"
+  Lewis Roca:
+    reason: "Combined into Womble Bond Dickinson; the legacy site redirects there."
+    source: "https://www.womblebonddickinson.com/us/insights/press-release/womble-bond-dickinson-combine-lewis-roca-forming-powerhouse-law-firm"
+  Ulmer & Berne:
+    reason: "Merged with Greensfelder to form UB Greensfelder effective 2024-02-01."
+    source: "https://www.announcingubglaw.com/assets/static/press-releases/Ulmer_and_Greensfelder_Complete_Merger_to_Create_Am_Law_200_Firm.pdf"
+
+firms:
+  - A&O Shearman
+  - Akerman LLP
+  - Akin
+  - Alston & Bird
+  - Armstrong Teasdale
+  - Arnold & Porter
+  - Baker Botts
+  - Baker Donelson
+  - Baker McKenzie
+  - BakerHostetler
+  - Ballard Spahr
+  - Barnes & Thornburg
+  - Bass, Berry & Sims
+  - Benesch
+  - Blank Rome
+  - Bracewell
+  - Bradley Arant Boult Cummings
+  - Brownstein Hyatt Farber Schreck
+  - Buchalter
+  - Burr & Forman
+  - Butler Snow
+  - Cadwalader, Wickersham & Taft
+  - Cahill Gordon & Reindel
+  - Carlton Fields
+  - Choate, Hall & Stewart
+  - Clark Hill
+  - Cleary Gottlieb Steen & Hamilton
+  - Cooley
+  - Covington & Burling
+  - Cozen O'Connor
+  - Cravath, Swaine & Moore
+  - Crowell & Moring
+  - DLA Piper
+  - Davis Polk & Wardwell
+  - Davis Wright Tremaine
+  - Debevoise & Plimpton
+  - Dechert
+  - Dentons US
+  - Dickinson Wright
+  - Dorsey & Whitney
+  - Duane Morris
+  - Faegre Drinker Biddle & Reath
+  - Fennemore
+  - Fenwick & West
+  - Fish & Richardson
+  - Foley & Lardner
+  - Foley Hoag
+  - Fox Rothschild
+  - Freshfields
+  - Fried Frank
+  - Frost Brown Todd
+  - Gibson Dunn
+  - Goodwin
+  - Gordon Rees
+  - Goulston & Storrs
+  - GrayRobinson
+  - Greenberg Traurig
+  - Hall Booth Smith
+  - Hall Estill
+  - Hanson Bridgett
+  - Haynes Boone
+  - Hirschler
+  - Hogan Lovells
+  - Holland & Hart
+  - Holland & Knight
+  - Honigman
+  - Husch Blackwell
+  - Ice Miller
+  - Jackson Walker
+  - Jenner & Block
+  - Jones Day
+  - K&L Gates
+  - Keker, Van Nest & Peters
+  - Kellogg Hansen
+  - Kilpatrick Townsend
+  - King & Spalding
+  - Kirkland & Ellis
+  - Kutak Rock
+  - Lane Powell
+  - Latham & Watkins
+  - Lathrop GPM
+  - Levenfeld Pearlstein
+  - Lewis Brisbois
+  - Lewis Rice
+  - Lewis Roca
+  - Littler Mendelson
+  - Locke Lord
+  - Loeb & Loeb
+  - Lowenstein Sandler
+  - Marshall Dennehey
+  - Mayer Brown
+  - McCarter & English
+  - McDermott Will & Schulte
+  - McGuireWoods
+  - Michael Best
+  - Milbank
+  - Mintz
+  - Morgan Lewis
+  - Morris Manning
+  - Morrison Foerster
+  - Munger Tolles
+  - Munsch Hardt
+  - Nelson Mullins
+  - Nexsen Pruet
+  - Nixon Peabody
+  - Norton Rose Fulbright
+  - Nutter
+  - O'Melveny & Myers
+  - Offit Kurman
+  - Orrick
+  - Parker Poe
+  - Paul Weiss
+  - Perkins Coie
+  - Phelps Dunbar
+  - Pillsbury
+  - Polsinelli
+  - Porter Hedges
+  - Proskauer Rose
+  - Quarles & Brady
+  - Quinn Emanuel
+  - Reed Smith
+  - Robinson+Cole
+  - Roetzel & Andress
+  - Ropes & Gray
+  - Saul Ewing
+  - Schulte Roth & Zabel
+  - Schwabe
+  - Seyfarth Shaw
+  - Sheppard Mullin
+  - Shipman & Goodwin
+  - Shook Hardy
+  - Sidley Austin
+  - Sills Cummis
+  - Simpson Thacher
+  - Skadden
+  - Smith Anderson
+  - Smith Gambrell
+  - Snell & Wilmer
+  - Spencer Fane
+  - Squire Patton Boggs
+  - Steptoe
+  - Stinson
+  - Stoel Rives
+  - Sullivan & Cromwell
+  - Susman Godfrey
+  - Taft
+  - Troutman Pepper Locke
+  - Ulmer & Berne
+  - Vedder Price
+  - Vinson & Elkins
+  - Wachtell
+  - Waller Lansden
+  - Weil
+  - White & Case
+  - Williams & Connolly
+  - Willkie Farr
+  - WilmerHale
+  - Wilson Sonsini
+  - Winstead
+  - Winston & Strawn
+  - Womble Bond Dickinson
+  - Woods Rogers
+  - Young Conaway

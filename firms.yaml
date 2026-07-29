@@ -2,10 +2,12 @@
 # METHOD: every firm's ATS was LIVE-VERIFIED on 2026-07-20 (careers page fetched,
 # candidate JSON/HTML endpoint hit, board titles inspected for real attorney roles
 # vs the staff-board trap). The set is the UNION of the Vault Law 100 and the Am
-# Law 200 (expanded 2026-07-20 from the earlier Vault∩AmLaw intersection core).
+# Law 200, plus the recipient-supplied combined-list reconciliation dated
+# 2026-07-28. External names and merger aliases are tracked under sources/.
 #
 # WHAT ACTUALLY FETCHES: ats_type in
-#   workday | greenhouse | lever | generic | careerpage | smartrecruiters | virecruit | radancy | ashby
+#   workday | greenhouse | lever | generic | careerpage | smartrecruiters |
+#   virecruit | radancy | ashby | jsonapi | browser
 # has a live fetcher and is polled. The virecruit fetcher parses the PUBLIC
 # self-apply listing HTML (RecDefault/ReDefault.aspx GridView) used by a large
 # share of firms (vi by Aderant) — the listing is public even though Apply is
@@ -1291,53 +1293,252 @@ firms:
     public_entry_level: unknown
     note: "Added 2026-07-20 (Am Law 200 union expansion). vedderprice.com hard-blocks datacenter IPs with HTTP 429 on every path via both WebFetch and curl (full browser headers); could not read careers/openings. Token guesses on greenhouse/lever/ashby/ultip"
 
+  # ---- Recipient-supplied list reconciliation (2026-07-28) ----
+  # These active firms were genuinely absent from the larger registry. Their
+  # official recruiting/careers pages are monitored independently of ATS support.
+  # Absorbed legacy names (Lane Powell, Lewis Roca, Ulmer & Berne) are aliases in
+  # sources/yue_combined_vault_am_law.yaml, not duplicate firm records.
+  - name: "Ballard Spahr"
+    careers_url: "https://www.ballardspahr.com/careers/law-students"
+    ats_type: unknown
+    public_entry_level: true
+    entry_pages:
+      - url: "https://www.ballardspahr.com/careers/law-students"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official law-student page includes dedicated first-year/3L/other entry-level candidate resume collects."
+  - name: "Burr & Forman"
+    careers_url: "https://www.burr.com/careers/summer-law-clerk-program"
+    ats_type: unknown
+    public_entry_level: true
+    entry_pages:
+      - url: "https://www.burr.com/careers/summer-law-clerk-program"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official US law-student recruiting page."
+  - name: "Dentons US"
+    careers_url: "https://www.dentons.com/en/careers/careers-in-the-united-states"
+    ats_type: unknown
+    public_entry_level: true
+    entry_pages:
+      - url: "https://www.dentons.com/en/careers/careers-in-the-united-states"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. US-specific careers page avoids Dentons' non-US graduate programs."
+  - name: "GrayRobinson"
+    careers_url: "https://www.gray-robinson.com/careers"
+    ats_type: unknown
+    public_entry_level: true
+    entry_pages:
+      - url: "https://www.gray-robinson.com/careers"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official US careers and summer recruiting page."
+  - name: "Hall Booth Smith"
+    careers_url: "https://hallboothsmith.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://hallboothsmith.com/careers/"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Hall Estill"
+    careers_url: "https://www.hallestill.com/join-us/overview"
+    ats_type: unknown
+    public_entry_level: true
+    entry_pages:
+      - url: "https://www.hallestill.com/join-us/overview"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official join-us page covers US summer recruiting."
+  - name: "Hanson Bridgett"
+    careers_url: "https://www.hansonbridgett.com/careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.hansonbridgett.com/careers"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Hirschler"
+    careers_url: "https://www.hirschlerlaw.com/careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.hirschlerlaw.com/careers"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Honigman"
+    careers_url: "https://www.honigman.com/careers-careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.honigman.com/careers-careers"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Keker, Van Nest & Peters"
+    careers_url: "https://www.keker.com/careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.keker.com/careers"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Kutak Rock"
+    careers_url: "https://www.kutakrock.com/careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.kutakrock.com/careers"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Lathrop GPM"
+    careers_url: "https://www.lathropgpm.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.lathropgpm.com/careers/"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Levenfeld Pearlstein"
+    careers_url: "https://www.lplegal.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.lplegal.com/careers/"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "McCarter & English"
+    careers_url: "https://www.mccarter.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.mccarter.com/careers/"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Morris, Manning & Martin"
+    careers_url: "https://www.mmmlaw.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.mmmlaw.com/careers/"
+        label: "Entry-Level Recruiting"
+    note: "Recipient supplied the short name Morris Manning; registry uses the active full brand."
+  - name: "Munsch Hardt"
+    careers_url: "https://www.munsch.com/Careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.munsch.com/Careers"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Offit Kurman"
+    careers_url: "https://www.offitkurman.com/careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.offitkurman.com/careers"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Porter Hedges"
+    careers_url: "https://www.porterhedges.com/careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.porterhedges.com/careers"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Robinson+Cole"
+    careers_url: "https://www.rc.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.rc.com/careers/"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Roetzel & Andress"
+    careers_url: "https://www.ralaw.com/careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.ralaw.com/careers"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Shipman & Goodwin"
+    careers_url: "https://www.shipmangoodwin.com/careers/law-students/index.html"
+    ats_type: unknown
+    public_entry_level: true
+    entry_pages:
+      - url: "https://www.shipmangoodwin.com/careers/law-students/index.html"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official page explicitly covers first-year associate applications from 3Ls and clerks."
+  - name: "Sills Cummis"
+    careers_url: "https://www.sillscummis.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.sillscummis.com/careers/"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Smith Anderson"
+    careers_url: "https://www.smithlaw.com/careers/open-positions"
+    ats_type: unknown
+    public_entry_level: true
+    entry_pages:
+      - url: "https://www.smithlaw.com/careers/open-positions"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official open-positions page links law-student opportunities separately from experienced attorneys."
+  - name: "Smith Gambrell & Russell"
+    careers_url: "https://www.sgrlaw.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.sgrlaw.com/careers/"
+        label: "Entry-Level Recruiting"
+    note: "Recipient supplied the short name Smith Gambrell; registry uses the active full brand."
+  - name: "Squire Patton Boggs"
+    careers_url: "https://www.squirepattonboggs.com/join-us/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.squirepattonboggs.com/join-us/"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official join-us page."
+  - name: "Winstead"
+    careers_url: "https://www.winstead.com/Careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.winstead.com/Careers"
+        label: "Entry-Level Recruiting"
+    note: "Added from recipient reconciliation. Official firm careers page."
+  - name: "Woods Rogers Vandeventer Black"
+    careers_url: "https://www.woodsrogers.com/careers/careers"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.woodsrogers.com/careers/careers"
+        label: "Entry-Level Recruiting"
+    note: "Recipient supplied the legacy short name Woods Rogers; registry uses the active combined brand."
+  - name: "Young Conaway Stargatt & Taylor"
+    careers_url: "https://www.youngconaway.com/careers/"
+    ats_type: unknown
+    public_entry_level: unknown
+    entry_pages:
+      - url: "https://www.youngconaway.com/careers/"
+        label: "Entry-Level Recruiting"
+        render: true
+    note: "Recipient supplied the short name Young Conaway; registry uses the active full brand."
+
 coverage_summary: >
-  73 firms listed — the high-confidence intersection CORE of Vault 100 and Am Law
-  200, NOT the full ~85-95 (both sources paywalled/gated; with WebFetch and all
-  direct HTTP egress blocked by the org proxy, only WebSearch worked, so the lists
-  could not be enumerated end-to-end). ATS was verified for 66 of the first 68 via
-  sub-agents that read the ATS host out of URLs in WebSearch results (never guessing
-  tokens). Breakdown: WORKDAY 20 (Skadden skadden/Skadden_Careers, Simpson Thacher
-  stblaw/careers, Weil weil/work_at_weil, Wilson Sonsini wsgr/WSGR, Cooley
-  cooley/Cooley_US_LLP, Dechert dechert/DechertCareers, King & Spalding kslaw/careers,
-  Fenwick fenwick/Fenwick_External_Careers, Goodwin goodwinprocter/External_Careers,
-  McDermott mwe/mwe_careers, Hogan Lovells hoganlovells/Search, Norton Rose Fulbright
-  nrf/External, Gunderson gunder/Gunderson, Perkins Coie perkinscoie/perkinscoieexternal,
-  Morgan Lewis morganlewis/morganlewis, Holland & Knight hklaw/Holland_Knight, DLA
-  Piper dlapiper/dlapiper, Alston & Bird alston/ExternalCareer, Munger Tolles
-  mto/MTO_Careers, Troutman Pepper Locke troutman/TPRecruit1 — all tenant/site copied
-  from real myworkdayjobs URLs); FLO_RECRUIT 10 (Wachtell, Mayer Brown, Vinson &
-  Elkins, Baker Botts [low], Proskauer, Akin Gump, Winston & Strawn, Sheppard Mullin,
-  Cahill, HSF Kramer); VIRECRUIT 4 (Paul Hastings, Cadwalader, Willkie — all confirmed
-  via viRecruitSelfApply URLs; Jones Day inferred from 'SelfApply'); GREENHOUSE 2
-  (Fried Frank token friedfrankharrisshriverjacobsonllp confirmed; Gibson Dunn token
-  'gibsondunn' confirmed but on a STAFF posting — attorney path may be viRecruit,
-  flagged); VIGLOBAL 1 (Orrick, inferred from hosted domain); OTHER 29 (iCIMS: Latham,
-  Milbank, Cleary, Foley, Sidley; Taleo: Paul Weiss, Katten, White & Case, +MoFo;
-  AllHires: Debevoise; Kenexa BrassRing: A&O Shearman; Avature: Baker McKenzie;
-  SilkRoad: WilmerHale; SmartRecruiters: Crowell & Moring; PeopleSoft: Reed Smith;
-  self-hosted/custom/email: Cravath, Kirkland, Sullivan & Cromwell, Davis Polk,
-  Covington, Ropes & Gray, Arnold & Porter, Quinn Emanuel, Fish & Richardson, Schulte
-  Roth, Hughes Hubbard, Boies Schiller, Williams & Connolly, Susman Godfrey). UNKNOWN 2
-  (Jenner & Block, Greenberg Traurig — branded custom portals, no ATS host exposed).
-  public_entry_level: TRUE for ~55 firms (surface summer/entry/3L programs publicly),
-  UNKNOWN for ~12 (mostly Vault top firms on Workday — Skadden, Simpson Thacher, Weil,
-  Kirkland, Milbank, Sidley, Wilson Sonsini, Cooley, Cadwalader, Quinn Emanuel — whose
-  public boards skew lateral and route first-years via OCI), FALSE for 1 (Morrison &
-  Foerster explicitly declines public first-year/clerk submissions). Intersection
-  uncertainty flags: Magic Circle (Freshfields, Clifford Chance, Linklaters) on Vault
-  but excluded as non-Am Law 200; A&O Shearman included but flagged (ambiguous
-  post-merger reporting); Kramer Levin/HSF Kramer likely fell out of the current Vault
-  100 after its merger; the ~15-25 Vault tail firms (ranks ~70-100: e.g. Kellogg
-  Hansen, Keker Van Nest, Kobre & Kim, Nixon Peabody, Venable, Seyfarth, Duane Morris,
-  Faegre Drinker, Ballard Spahr) could not be enumerated from search snippets and are
-  NOT in this list (though 5 tail firms — K&L Gates #49, Pillsbury #58, McGuireWoods
-  #70, Kellogg Hansen #74, Mintz #79 — were confirmed and added with ATS unresearched).
-  MEMBERSHIP CAVEAT: the Vault-membership agent could NOT independently confirm
-  Vault-100 placement for 10 large-revenue firms in this list — Gunderson Dettmer,
-  Foley & Lardner, Baker McKenzie, Greenberg Traurig, DLA Piper, Reed Smith, Troutman
-  Pepper Locke, Crowell & Moring, Morgan Lewis, Holland & Knight; these are solidly Am
-  Law 100/200 but their Vault prestige placement (and thus intersection membership) is
-  UNCERTAIN and should be re-verified against the full Vault list. Also note the
-  2026-2027 edition reshuffled the top 10 (Sullivan & Cromwell to #5, Kirkland #6,
-  Gibson Dunn #8, Paul Weiss down to #13).
+  226 canonical firms are listed. 154 have a supported ATS fetcher. Another 28
+  recipient-list additions have official entry-recruiting pages monitored for an
+  explicit open 3L / entry-level signal, so 182 firms have at least one active
+  source. The remaining 44 have no currently pollable public source. The
+  recipient's 163 actual names (the numbered source had a blank item 155) resolve
+  completely through canonical records and explicit merger/short-name aliases.
+  Run `python reconcile_firms.py --check` for current, executable counts.

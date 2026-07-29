@@ -35,6 +35,23 @@ class SuccessfulNotifier:
         self.sent.append(digest)
 
 
+class FakeEntryPageFetcher:
+    def __init__(self, _client, target_years):
+        assert target_years == [2027]
+
+    def fetch_page(self, firm, _page_config):
+        return [
+            Posting(
+                firm.name,
+                "entry-1",
+                "Entry-Level Recruiting",
+                "United States",
+                "https://firm.example/apply",
+                "entrypage",
+            )
+        ]
+
+
 def _write_yaml(path, data):
     path.write_text(yaml.safe_dump(data))
 
@@ -147,3 +164,37 @@ def test_history_does_not_fetch(tmp_path, monkeypatch, capsys):
     tmp = _setup(tmp_path, monkeypatch, ExplodingFetcher(None))
     assert main_mod.run(_args(tmp, history=5)) == 0
     assert "No exact notification audit rows yet." in capsys.readouterr().out
+
+
+def test_unknown_ats_firm_still_polls_configured_entry_page(
+    tmp_path, monkeypatch, capsys
+):
+    firms = {
+        "firms": [
+            {
+                "name": "Entry Page Firm",
+                "ats_type": "unknown",
+                "careers_url": "https://firm.example/careers",
+                "entry_pages": [
+                    {
+                        "url": "https://firm.example/careers",
+                        "label": "Entry-Level Recruiting",
+                    }
+                ],
+            }
+        ]
+    }
+    _write_yaml(tmp_path / "firms.yaml", firms)
+    import pathlib
+
+    repo_cfg = pathlib.Path(main_mod.HERE / "config.yaml").read_text()
+    (tmp_path / "config.yaml").write_text(repo_cfg)
+    monkeypatch.setattr(main_mod, "EntryPageFetcher", FakeEntryPageFetcher)
+    monkeypatch.setattr(main_mod, "build_registry", lambda _client: {})
+
+    rc = main_mod.run(_args(tmp_path, dry_run=True))
+
+    assert rc == 0
+    output = capsys.readouterr().out
+    assert "Entry-Level Recruiting" in output
+    assert "https://firm.example/apply" in output
