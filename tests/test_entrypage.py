@@ -99,3 +99,21 @@ def test_fingerprint_is_stable_and_changes_with_application_link():
     )[0]
     assert first.job_id == repeat.job_id
     assert changed.job_id != first.job_id
+
+
+def test_tolerated_browser_block_is_an_empty_source(monkeypatch):
+    fetcher = EntryPageFetcher(FakeClient(""), target_years=[2027])
+    monkeypatch.setattr(
+        fetcher,
+        "_get_html",
+        lambda _url, _render, tolerate_block: "",
+    )
+    postings = fetcher.fetch_page(
+        _firm(),
+        {
+            "url": "https://firm.example/careers",
+            "render": True,
+            "tolerate_block": True,
+        },
+    )
+    assert postings == []

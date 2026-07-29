@@ -97,7 +97,13 @@ class EntryPageFetcher(Fetcher):
         super().__init__(client)
         self.target_years = {int(year) for year in (target_years or [])}
 
-    def _get_html(self, url: str, render: bool) -> str:
+    def _get_html(
+        self,
+        url: str,
+        render: bool,
+        *,
+        tolerate_block: bool = False,
+    ) -> str:
         if not render:
             return self.client.get_text(url) or ""
 
@@ -113,6 +119,13 @@ class EntryPageFetcher(Fetcher):
             status = response.status if response is not None else 0
             body = (page.inner_text("body") or "").strip()
             if (status and status >= 400) or len(body) < 100:
+                if tolerate_block:
+                    log.warning(
+                        "Entry page was blocked; skipping opportunistic source "
+                        "(tolerate_block): %s",
+                        url,
+                    )
+                    return ""
                 raise RuntimeError(
                     f"entry page render failed or was blocked (status={status})"
                 )
@@ -136,7 +149,13 @@ class EntryPageFetcher(Fetcher):
         url = cfg.get("url")
         if not url:
             raise ValueError(f"{firm.name}: entry page requires a url")
-        html = self._get_html(url, bool(cfg.get("render", False)))
+        html = self._get_html(
+            url,
+            bool(cfg.get("render", False)),
+            tolerate_block=bool(cfg.get("tolerate_block", False)),
+        )
+        if not html and cfg.get("tolerate_block"):
+            return []
         parser = _PageParser()
         parser.feed(html)
         text = clean_text(" ".join(parser.text))
