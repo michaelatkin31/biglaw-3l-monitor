@@ -53,6 +53,11 @@ open-application evidence, or a target-class-year opportunity. Target-year
 the relevant application link and evidence provides idempotency and permits a
 new alert when the application path actually changes.
 
+An intermittently blocked page can opt into `tolerate_block: true`: that source
+is skipped for the affected run rather than making the run summary report a
+failure. This is scoped to Hanson Bridgett after its CDN returned HTTP 403 from
+GitHub's runner while rendering successfully from the verification machine.
+
 School-gated OCI, Symplicity, and private Flo Recruit flows remain an unavoidable
 ceiling: an application that never appears on a public board or page cannot be
 detected by this monitor.

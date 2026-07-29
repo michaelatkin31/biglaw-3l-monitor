@@ -1356,7 +1356,8 @@ firms:
       - url: "https://www.hansonbridgett.com/careers"
         label: "Entry-Level Recruiting"
         render: true
-    note: "Added from recipient reconciliation. Official firm careers page."
+        tolerate_block: true
+    note: "Added from recipient reconciliation. Official firm careers page; its CDN intermittently returns 403 to GitHub runners, so blocked runs are opportunistic skips."
   - name: "Hirschler"
     careers_url: "https://www.hirschlerlaw.com/careers"
     ats_type: unknown

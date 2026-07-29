@@ -246,6 +246,7 @@ Edit `firms.yaml`:
     - url: "https://www.example.com/careers/law-students"
       label: "Entry-Level Recruiting"
       render: true              # only when plain HTTP is blocked/JS-only
+      tolerate_block: true      # optional: intermittent CDN block => skip, not fail
   public_entry_level: unknown
   note: ""
 ```
