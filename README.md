@@ -55,55 +55,38 @@ The pipeline per run:
 
 ## Coverage: what actually gets polled
 
-`firms.yaml` ships with **198 firms** — the **union of the Vault Law 100 and the
-Am Law 200** (expanded 2026-07-20 from the earlier ~75-firm intersection).
-Every firm's ATS was **live-verified** (careers page fetched, candidate JSON/HTML
-endpoint hit, board titles inspected for real attorney roles vs the staff-board trap).
+`firms.yaml` now contains **226 canonical firms**:
 
-Nine ATS backends have working fetchers, so the monitor actively polls
-**85 firms** (up from ~22 originally):
+- **154** have one of the 11 supported ATS/board fetchers.
+- **28** additional firms from the recipient-supplied list have an official US
+  recruiting page monitored for an explicit open 3L / entry-level signal.
+- **182 firms total** therefore have at least one active source; **44** remain
+  listed but lack a currently pollable public source.
 
-- **48 viRecruit** (`vi by Aderant`) — the biggest source of coverage. vi's *Apply*
-  step is login-gated, but the **listing page is public HTML**
-  (`viRecruitSelfApply/RecDefault.aspx` or `ReDefault.aspx`), which the `virecruit`
-  fetcher parses. Spans the top tier (Cleary, Jones Day, O'Melveny, Milbank, Boies
-  Schiller, Akin Gump…) and much of the Am Law tail (Faegre Drinker, Littler,
-  Cozen, Duane Morris, Foley, Fox Rothschild, Akerman…).
-- **28 Workday** — Skadden, Simpson Thacher, Cooley, McDermott, Hogan Lovells,
-  DLA Piper, Perkins Coie, Greenberg Traurig, Pillsbury, HSF Kramer, Jackson
-  Lewis, Fragomen, … (all with `workday_host` pinned).
-- **3 Greenhouse** (Fried Frank, Hughes Hubbard, …) · **2 career.page** (Jibe —
-  Morrison & Foerster, Ogletree) · **1 Ashby** (Barnes & Thornburg) ·
-  **1 SmartRecruiters** (Crowell & Moring) · **1 Radancy** (A&O Shearman) ·
-  **2 generic** (Bond Schoeneck JSON-LD; Kilpatrick microdata).
+The supplied combined Vault/Am Law reference is preserved at
+`sources/yue_combined_vault_am_law.yaml`. It contains **163 actual names** (the
+original numbering had a blank item 155), all of which resolve to the registry.
+Short names and absorbed firms are explicit aliases, so Lane Powell is not
+polled separately from Ballard Spahr, Lewis Roca is not polled separately from
+Womble Bond Dickinson, and Ulmer & Berne is not polled separately from UB
+Greensfelder.
 
-The Am Law tail (ranks ~50-200) leans far more on these pollable ATSs — and posts
-entry-level / 2L-summer roles publicly — much more than the gated elite core, so
-the union expansion roughly **doubled** genuine coverage.
+Recruiting landing pages are not treated as open jobs merely because they say
+“Law Students.” The page monitor requires an entry-level/3L signal plus
+application-open evidence, or a target-year opportunity; it also rejects
+target-year 1L/2L summer-associate programs. Eleven bot-protected pages use the
+existing headless Chromium fallback. All 28 configured pages were live-tested
+when added.
 
-The remaining ~35 firms have **no pollable endpoint**: `viglobal`/self-hosted
-viRecruit behind Cloudflare or broken TLS (Kirkland, Paul Hastings, Willkie),
-iCIMS / Taleo / LawCruit / Avature, a Cloudflare-gated Workday tenant (Paul
-Weiss), or email-only (Cravath, Davis Polk, Sullivan & Cromwell, Susman, Quinn
-Emanuel). A couple (Wachtell, Proskauer) expose a public API but it's a
-**staff-only board** with zero attorneys, so polling it would be noise. See
-`DECISIONS.md` §4.
+Generate the executable reconciliation and coverage report with:
 
-Two ATSs were investigated with a headless browser and rejected: **Flo Recruit**
-(the job board is disabled for 5/7 of our firms — they use it only for OCI event
-forwarding — and the 2 with it enabled were empty) and **iCIMS attorney boards**
-(login-gated, e.g. `lw.icims.com` → `login.icims.com`; only the *staff* iCIMS is
-public). Headless rendering works fine; the blockers are auth and absent data, so
-a browser doesn't help. (A&O Shearman's Radancy site, by contrast, is public
-server-rendered HTML — hence pollable with plain HTTP.)
+```bash
+python reconcile_firms.py --check
+```
 
-> **Reality for a job-seeker:** even among the 40 polled firms, live data shows the
-> public boards are overwhelmingly *lateral* (experienced) associate roles.
-> Genuine entry-level postings ("first-year", "class of 202X", "post-clerkship")
-> are rare on public boards. The filter is tuned **recall-first** (see
-> "Tuning the filter") so the rare real one is never missed, at the cost of some
-> lateral roles in the digest. Treat this tool as *one* strong signal, not a
-> substitute for OSCAR (clerkships), NALP, and direct firm-by-firm checks.
+Public boards still skew heavily toward experienced lawyers, and many elite
+firms hire new graduates through OCI or school-gated systems. Treat this monitor
+as one signal, not a substitute for school recruiting systems and direct checks.
 
 **Verify / refresh the classification** (optional but recommended) from any
 machine with open outbound HTTPS:
@@ -169,9 +152,9 @@ variables → Actions). The workflow maps each secret to the matching env var.
 
 ## Scheduled runs (GitHub Actions)
 
-`.github/workflows/monitor.yml` runs daily at **12:00 UTC** (= 8:00 AM ET during
-EDT / 7:00 AM ET during EST — GitHub cron is always UTC; edit the cron for a
-fixed local hour) and also supports **manual runs** (`workflow_dispatch`).
+`.github/workflows/monitor.yml` runs daily at **08:17 UTC** (about 4:17 AM ET
+during EDT / 3:17 AM during EST) and also supports manual runs. The off-hour
+minute avoids GitHub's heavier on-the-hour cron queue.
 
 State persistence: the workflow commits the updated `state.db` back to the repo
 after each run. The persistence step also runs after a monitor failure so a
@@ -259,6 +242,10 @@ Edit `firms.yaml`:
   ats_type: greenhouse          # greenhouse|lever|workday|generic|careerpage|smartrecruiters|unknown
   ats_identifier: "examplellp"  # GH token | Lever slug | "tenant/site" (Workday) | career.page subdomain | SmartRecruiters company id
   location_policy: require_us   # optional: global board must name a US office
+  entry_pages:                  # optional: additional 3L/entry recruiting page
+    - url: "https://www.example.com/careers/law-students"
+      label: "Entry-Level Recruiting"
+      render: true              # only when plain HTTP is blocked/JS-only
   public_entry_level: unknown
   note: ""
 ```

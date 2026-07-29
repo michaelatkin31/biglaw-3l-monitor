@@ -35,6 +35,7 @@ from core.notify import (
 )
 from fetchers import build_registry, get_fetcher
 from fetchers.base import Firm
+from fetchers.entrypage import EntryPageFetcher
 
 log = logging.getLogger("biglaw_monitor")
 
@@ -191,6 +192,34 @@ def run(args: argparse.Namespace) -> int:
     match_reasons: dict[tuple[str, str], str] = {}
     shadow_reasons: dict[tuple[str, str], str] = {}
 
+    def classify_candidates(postings: list[Posting]) -> tuple[list[Posting], list[Posting]]:
+        matched: list[Posting] = []
+        shadow_matched: list[Posting] = []
+        for posting in postings:
+            decision = posting_filter.decide(posting)
+            if decision.matched:
+                matched.append(posting)
+                match_reasons[posting.key()] = decision.reason
+                continue
+            log.debug(
+                "FILTERED[%s] %s -- %s",
+                posting.firm,
+                posting.title,
+                decision.reason,
+            )
+            if shadow_filter is not None:
+                shadow_decision = shadow_filter.decide(posting)
+                if shadow_decision.matched:
+                    shadow_matched.append(posting)
+                    shadow_reasons[posting.key()] = shadow_decision.reason
+                    log.debug(
+                        "SHADOW [%s] %s -- %s",
+                        posting.firm,
+                        posting.title,
+                        shadow_decision.reason,
+                    )
+        return matched, shadow_matched
+
     for firm in firms:
         fetcher = get_fetcher(registry, firm.ats_type)
         if fetcher is None:
@@ -200,31 +229,7 @@ def run(args: argparse.Namespace) -> int:
             continue
         try:
             postings = fetcher.fetch(firm)
-            matched: list[Posting] = []
-            shadow_matched: list[Posting] = []
-            for posting in postings:
-                decision = posting_filter.decide(posting)
-                if decision.matched:
-                    matched.append(posting)
-                    match_reasons[posting.key()] = decision.reason
-                    continue
-                log.debug(
-                    "FILTERED[%s] %s -- %s",
-                    posting.firm,
-                    posting.title,
-                    decision.reason,
-                )
-                if shadow_filter is not None:
-                    shadow_decision = shadow_filter.decide(posting)
-                    if shadow_decision.matched:
-                        shadow_matched.append(posting)
-                        shadow_reasons[posting.key()] = shadow_decision.reason
-                        log.debug(
-                            "SHADOW [%s] %s -- %s",
-                            posting.firm,
-                            posting.title,
-                            shadow_decision.reason,
-                        )
+            matched, shadow_matched = classify_candidates(postings)
             all_matches.extend(matched)
             all_shadow_matches.extend(shadow_matched)
             summary.add(
@@ -240,6 +245,43 @@ def run(args: argparse.Namespace) -> int:
         except Exception as e:  # noqa: BLE001 - per-firm isolation is the point
             log.warning("%s [%s]: FAILED -- %s", firm.name, firm.ats_type, e)
             summary.add(FirmResult(firm.name, firm.ats_type, ok=False, error=str(e)))
+
+    entry_page_fetcher = EntryPageFetcher(
+        client,
+        target_years=config.get("filters", {}).get("target_class_years", []),
+    )
+    for firm in firms:
+        for page_config in firm.options.get("entry_pages", []):
+            page_url = (
+                page_config
+                if isinstance(page_config, str)
+                else page_config.get("url", "<missing url>")
+            )
+            try:
+                postings = entry_page_fetcher.fetch_page(firm, page_config)
+                matched, shadow_matched = classify_candidates(postings)
+                all_matches.extend(matched)
+                all_shadow_matches.extend(shadow_matched)
+                summary.add_entry_page(
+                    ok=True,
+                    fetched=len(postings),
+                    matched=len(matched),
+                )
+                log.info(
+                    "%s [entrypage]: %d open signal(s), %d matched — %s",
+                    firm.name,
+                    len(postings),
+                    len(matched),
+                    page_url,
+                )
+            except Exception as e:  # noqa: BLE001 - isolate every page
+                summary.add_entry_page(ok=False)
+                log.warning(
+                    "%s [entrypage]: FAILED -- %s — %s",
+                    firm.name,
+                    e,
+                    page_url,
+                )
 
     client.close()
     summary.shadow_matches = len({posting.key() for posting in all_shadow_matches})
