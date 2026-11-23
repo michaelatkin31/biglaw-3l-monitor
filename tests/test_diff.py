@@ -49,7 +49,7 @@ def test_persists_across_connections(tmp_path):
 def test_successful_notification_atomically_marks_seen(tmp_path):
     db = tmp_path / "state.db"
     posts = [_p("1")]
-    digest = render_digest(posts, RunSummary())
+    digest = render_digest(posts, RunSummary().as_line())
     with DiffStore(db) as store:
         run_id = store.begin_notification(
             digest,
@@ -74,7 +74,7 @@ def test_successful_notification_atomically_marks_seen(tmp_path):
 def test_failed_notification_remains_retryable(tmp_path):
     db = tmp_path / "state.db"
     posts = [_p("1")]
-    digest = render_digest(posts, RunSummary())
+    digest = render_digest(posts, RunSummary().as_line())
     with DiffStore(db) as store:
         run_id = store.begin_notification(digest, "summary", posts)
         store.fail_notification(run_id, "smtp unavailable")
@@ -89,7 +89,7 @@ def test_failed_notification_remains_retryable(tmp_path):
 def test_shadow_candidates_are_upserted_not_duplicated(tmp_path):
     db = tmp_path / "state.db"
     shadow = _p("shadow", title="Corporate Associate")
-    digest = render_digest([], RunSummary())
+    digest = render_digest([], RunSummary().as_line())
     with DiffStore(db) as store:
         first_run = store.begin_notification(
             digest,
@@ -116,7 +116,7 @@ def test_shadow_candidates_are_upserted_not_duplicated(tmp_path):
 def test_seed_is_audited_and_marks_seen(tmp_path):
     db = tmp_path / "state.db"
     posts = [_p("1")]
-    digest = render_digest(posts, RunSummary())
+    digest = render_digest(posts, RunSummary().as_line())
     with DiffStore(db) as store:
         run_id = store.begin_notification(digest, "summary", posts)
         store.finish_notification(run_id, posts, status="seeded")

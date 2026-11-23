@@ -4,6 +4,7 @@
 accepted. ``notification_runs`` and ``notification_items`` preserve the exact
 digest and its delivery status. ``shadow_jobs`` retains broader recall
 candidates without putting them in the recipient's daily email.
+``weekly_digests`` records each delivered weekly roll-up of sent daily items.
 
 Delivery finalization and seen-state updates share one SQLite transaction. A
 failed delivery therefore stays retryable instead of disappearing from the
@@ -84,6 +85,12 @@ CREATE TABLE IF NOT EXISTS shadow_jobs (
     first_seen   TEXT NOT NULL,
     last_seen    TEXT NOT NULL,
     PRIMARY KEY (firm, job_id)
+);
+
+CREATE TABLE IF NOT EXISTS weekly_digests (
+    sent_at    TEXT PRIMARY KEY,
+    since      TEXT NOT NULL,
+    item_count INTEGER NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_notification_runs_started_at
@@ -352,6 +359,45 @@ class DiffStore:
                 (run_id,),
             )
             return cur.fetchall()
+
+    def last_weekly_sent_at(self) -> str | None:
+        with closing(self._conn.cursor()) as cur:
+            cur.execute("SELECT MAX(sent_at) FROM weekly_digests")
+            return cur.fetchone()[0]
+
+    def sent_items_since(self, since: str) -> list[sqlite3.Row]:
+        """Postings in daily digests delivered after ``since``, earliest delivery first."""
+        with closing(self._conn.cursor()) as cur:
+            cur.execute(
+                """
+                SELECT i.firm, i.job_id, i.title, i.location, i.url, i.posted_date,
+                       i.ats, i.entry_score
+                FROM notification_items AS i
+                JOIN notification_runs AS r ON r.run_id = i.run_id
+                WHERE r.status = 'sent' AND r.completed_at > ?
+                ORDER BY r.completed_at, i.firm, i.title
+                """,
+                (since,),
+            )
+            return cur.fetchall()
+
+    def run_status_counts_since(self, since: str) -> dict[str, int]:
+        with closing(self._conn.cursor()) as cur:
+            cur.execute(
+                """
+                SELECT status, COUNT(*) FROM notification_runs
+                WHERE started_at > ? GROUP BY status
+                """,
+                (since,),
+            )
+            return {status: int(n) for status, n in cur.fetchall()}
+
+    def record_weekly(self, since: str, item_count: int, now: str | None = None) -> None:
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO weekly_digests (sent_at, since, item_count) VALUES (?, ?, ?)",
+                (now or _now_iso(), since, item_count),
+            )
 
     def shadow_count(self) -> int:
         with closing(self._conn.cursor()) as cur:
