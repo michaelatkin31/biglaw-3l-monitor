@@ -142,7 +142,8 @@ in code**. A Gmail app-password works well.
 | `SMTP_PORT`  | no       | default `587` (STARTTLS). `465` → implicit TLS |
 | `SMTP_USER`  | no*      | required if your server needs auth (Gmail does) |
 | `SMTP_PASS`  | no*      | Gmail: an **app password**, not your login password |
-| `EMAIL_TO`   | yes      | recipient; comma-separated for multiple |
+| `EMAIL_TO_DAILY`  | yes | daily digest recipients; comma-separated |
+| `EMAIL_TO_WEEKLY` | yes | weekly roll-up recipients; comma-separated |
 | `EMAIL_FROM` | yes      | sender address |
 
 In GitHub Actions, set these as **repository secrets** (Settings → Secrets and
@@ -155,6 +156,11 @@ variables → Actions). The workflow maps each secret to the matching env var.
 `.github/workflows/monitor.yml` runs daily at **08:17 UTC** (about 4:17 AM ET
 during EDT / 3:17 AM during EST) and also supports manual runs. The off-hour
 minute avoids GitHub's heavier on-the-hour cron queue.
+
+Every run emails the daily digest to `EMAIL_TO_DAILY`. Once 7 days (UTC dates)
+have passed since the last weekly email, the run also sends `EMAIL_TO_WEEKLY` a
+roll-up of every posting delivered in daily digests since then, recorded in the
+`weekly_digests` table.
 
 State persistence: the workflow commits the updated `state.db` back to the repo
 after each run. The persistence step also runs after a monitor failure so a

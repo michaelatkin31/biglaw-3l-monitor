@@ -5,7 +5,8 @@ Rendering (build the digest) is separated from delivery (send it) behind a small
 alternate channel (Slack, etc.), can reuse `render_digest` without touching SMTP.
 
 SMTP config is read entirely from environment variables:
-  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_TO, EMAIL_FROM
+  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM
+Recipients are per digest: EMAIL_TO_DAILY and EMAIL_TO_WEEKLY.
 No secrets are ever hardcoded.
 """
 
@@ -21,7 +22,7 @@ from email.message import EmailMessage
 from html import escape
 from typing import Callable, Optional, Protocol
 
-from .models import Posting, RunSummary
+from .models import Posting
 
 log = logging.getLogger(__name__)
 
@@ -63,8 +64,10 @@ def _group_by_firm(postings: list[Posting]) -> dict[str, list[Posting]]:
 
 def render_digest(
     new_postings: list[Posting],
-    summary: Optional[RunSummary] = None,
+    footer: Optional[str] = None,
     score_fn: Optional[Callable[[Posting], int]] = None,
+    *,
+    since: Optional[date] = None,
 ) -> Digest:
     """Build a subject + text + HTML digest.
 
@@ -73,8 +76,16 @@ def render_digest(
     ranked highest-first; everything else falls into "Other associate roles"
     grouped by firm. With no score_fn (or when nothing scores), it degrades to the
     plain firm-grouped digest, so ordinary days look unchanged.
+
+    `since` renders a weekly roll-up covering `since` through today.
     """
     today = date.today().isoformat()
+    if since is None:
+        prefix, period, quiet = "", today, "No new postings today."
+    else:
+        prefix = "Weekly: "
+        period = f"{since.isoformat()} to {today}"
+        quiet = "No new postings this week."
     postings = _dedup(new_postings)
     n = len(postings)
     score = score_fn or (lambda _p: 0)
@@ -85,14 +96,14 @@ def render_digest(
     other = [p for p in postings if score(p) == 0]
 
     if not n:
-        subject = f"[BigLaw 3L Monitor] No new postings — {today}"
+        subject = f"[BigLaw 3L Monitor] {prefix}No new postings — {period}"
     elif likely:
         subject = (
-            f"[BigLaw 3L Monitor] {n} new posting(s), "
-            f"{len(likely)} likely entry-level — {today}"
+            f"[BigLaw 3L Monitor] {prefix}{n} new posting(s), "
+            f"{len(likely)} likely entry-level — {period}"
         )
     else:
-        subject = f"[BigLaw 3L Monitor] {n} new posting(s) — {today}"
+        subject = f"[BigLaw 3L Monitor] {prefix}{n} new posting(s) — {period}"
 
     def _line(p: Posting, with_firm: bool) -> tuple[str, str]:
         who = f"{p.firm} — " if with_firm else ""
@@ -101,9 +112,9 @@ def render_digest(
         return f"  • {who}{p.title}{loc}{when}", f"    {p.url}"
 
     # --- plain text ---
-    text_lines = [f"{n} new 3L / entry-level associate posting(s) as of {today}", ""]
+    text_lines = [f"{n} new 3L / entry-level associate posting(s) — {period}", ""]
     if not n:
-        text_lines.append("No new postings today. The monitor ran successfully.")
+        text_lines.append(f"{quiet} The monitor ran successfully.")
         text_lines.append("")
     if likely:
         text_lines.append(f"** LIKELY ENTRY-LEVEL ({len(likely)}) **")
@@ -119,9 +130,9 @@ def render_digest(
             for p in posts:
                 text_lines.extend(_line(p, with_firm=False))
             text_lines.append("")
-    if summary is not None:
+    if footer is not None:
         text_lines.append("---")
-        text_lines.append(summary.as_line())
+        text_lines.append(footer)
     text_body = "\n".join(text_lines)
 
     # --- html ---
@@ -145,11 +156,11 @@ def render_digest(
         f"<h2 style=\"margin:0 0 4px\">BigLaw 3L / Entry-Level Monitor</h2>",
         f"<p style=\"color:#666;margin:0 0 16px\">{n} new posting(s)"
         + (f" &middot; {len(likely)} likely entry-level" if likely else "")
-        + f" — {escape(today)}</p>",
+        + f" — {escape(period)}</p>",
     ]
     if not n:
         html_parts.append(
-            "<p style=\"margin:0 0 16px\">No new postings today. "
+            f"<p style=\"margin:0 0 16px\">{quiet} "
             "The monitor ran successfully.</p>"
         )
     if likely:
@@ -173,10 +184,10 @@ def render_digest(
             )
             html_parts.extend(_li(p, with_firm=False) for p in posts)
             html_parts.append("</ul>")
-    if summary is not None:
+    if footer is not None:
         html_parts.append(
             f"<p style=\"color:#999;font-size:12px;margin-top:24px;"
-            f"border-top:1px solid #eee;padding-top:8px\">{escape(summary.as_line())}</p>"
+            f"border-top:1px solid #eee;padding-top:8px\">{escape(footer)}</p>"
         )
     html_parts.append("</div>")
     html_body = "".join(html_parts)
@@ -184,16 +195,22 @@ def render_digest(
     return Digest(subject=subject, text_body=text_body, html_body=html_body, match_count=n)
 
 
+def recipients_from_env(var: str) -> list[str]:
+    """Comma-separated addresses; blanks (e.g. an unset appended secret) are dropped."""
+    return [r.strip() for r in os.environ.get(var, "").split(",") if r.strip()]
+
+
 class Notifier(Protocol):
-    def notify(self, digest: Digest) -> None:
+    def notify(self, digest: Digest, recipients: list[str]) -> None:
         ...
 
 
 class ConsoleNotifier:
     """Prints the digest to stdout. Used by --dry-run and for local debugging."""
 
-    def notify(self, digest: Digest) -> None:
+    def notify(self, digest: Digest, recipients: list[str]) -> None:
         print("=" * 70)
+        print(f"TO: {', '.join(recipients) or '(none)'}")
         print(f"SUBJECT: {digest.subject}")
         print("=" * 70)
         print(digest.text_body)
@@ -206,20 +223,19 @@ class SmtpConfig:
     port: int
     user: Optional[str]
     password: Optional[str]
-    email_to: str
     email_from: str
 
     @classmethod
     def from_env(cls) -> "SmtpConfig":
         missing = [
             v
-            for v in ("SMTP_HOST", "EMAIL_TO", "EMAIL_FROM")
+            for v in ("SMTP_HOST", "EMAIL_FROM")
             if not os.environ.get(v)
         ]
         if missing:
             raise RuntimeError(
                 f"Missing required SMTP env vars: {', '.join(missing)}. "
-                "Set SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/EMAIL_TO/EMAIL_FROM "
+                "Set SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASS/EMAIL_FROM "
                 "or run with --dry-run."
             )
         return cls(
@@ -227,7 +243,6 @@ class SmtpConfig:
             port=int(os.environ.get("SMTP_PORT", "587")),
             user=os.environ.get("SMTP_USER"),
             password=os.environ.get("SMTP_PASS"),
-            email_to=os.environ["EMAIL_TO"],
             email_from=os.environ["EMAIL_FROM"],
         )
 
@@ -238,12 +253,12 @@ class EmailNotifier:
     def __init__(self, config: SmtpConfig) -> None:
         self.config = config
 
-    def notify(self, digest: Digest) -> None:
+    def notify(self, digest: Digest, recipients: list[str]) -> None:
+        if not recipients:
+            raise RuntimeError("No recipients for digest")
         msg = EmailMessage()
         msg["Subject"] = digest.subject
         msg["From"] = self.config.email_from
-        # EMAIL_TO may be a comma-separated list.
-        recipients = [r.strip() for r in self.config.email_to.split(",") if r.strip()]
         msg["To"] = ", ".join(recipients)
         msg.set_content(digest.text_body)
         msg.add_alternative(digest.html_body, subtype="html")

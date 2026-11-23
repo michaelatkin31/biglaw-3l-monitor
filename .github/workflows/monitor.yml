@@ -1,6 +1,7 @@
 name: biglaw-3l-monitor
 
-# Daily digest of new 3L / entry-level associate postings.
+# Daily digest of new 3L / entry-level associate postings, plus a weekly roll-up
+# to EMAIL_TO_WEEKLY when one is due.
 #
 # Schedule: 08:17 UTC every day = ~4:17 AM US-Eastern during EDT (summer) and
 # ~3:17 AM during EST (winter). GitHub cron is always UTC, so a fixed local hour
@@ -46,11 +47,8 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          # EMAIL_TO is the primary recipient list; EMAIL_TO_EXTRA appends more
-          # recipients without exposing addresses in this public repo (main.py
-          # splits on commas and ignores blanks, so an unset EMAIL_TO_EXTRA and
-          # the trailing comma are both harmless).
-          EMAIL_TO: "${{ secrets.EMAIL_TO }},${{ secrets.EMAIL_TO_EXTRA }}"
+          EMAIL_TO_DAILY: ${{ secrets.EMAIL_TO_DAILY }}
+          EMAIL_TO_WEEKLY: ${{ secrets.EMAIL_TO_WEEKLY }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
         run: python main.py
 

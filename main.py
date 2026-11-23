@@ -19,6 +19,7 @@ import argparse
 import copy
 import logging
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
@@ -29,8 +30,10 @@ from core.http import DEFAULT_UA, HttpClient
 from core.models import FirmResult, Posting, RunSummary
 from core.notify import (
     ConsoleNotifier,
+    Digest,
     EmailNotifier,
     SmtpConfig,
+    recipients_from_env,
     render_digest,
 )
 from fetchers import build_registry, get_fetcher
@@ -40,6 +43,7 @@ from fetchers.entrypage import EntryPageFetcher
 log = logging.getLogger("biglaw_monitor")
 
 HERE = Path(__file__).resolve().parent
+WEEKLY_INTERVAL_DAYS = 7
 
 
 def setup_logging(verbose: bool) -> None:
@@ -153,6 +157,50 @@ def print_history(store: DiffStore, limit: int) -> None:
                 f"  {item['first_seen']} • {item['firm']} — "
                 f"{item['title']}{location}"
             )
+
+
+def build_weekly(store: DiffStore, now: datetime) -> tuple[Digest, str] | None:
+    """Return (digest, since) when the weekly roll-up is due, else None."""
+    last = store.last_weekly_sent_at()
+    if last and (now.date() - datetime.fromisoformat(last).date()).days < WEEKLY_INTERVAL_DAYS:
+        return None
+    since = last or (now - timedelta(days=WEEKLY_INTERVAL_DAYS)).isoformat(timespec="seconds")
+    rows = store.sent_items_since(since)
+    postings = [
+        Posting(
+            firm=r["firm"], job_id=r["job_id"], title=r["title"] or "",
+            location=r["location"] or "", url=r["url"] or "", ats=r["ats"] or "",
+            posted_date=r["posted_date"],
+        )
+        for r in rows
+    ]
+    scores = {(r["firm"], r["job_id"]): r["entry_score"] for r in rows}
+    counts = store.run_status_counts_since(since)
+    footer = f"Daily runs since {since[:10]}: " + (
+        ", ".join(f"{n} {status}" for status, n in sorted(counts.items())) or "none"
+    )
+    digest = render_digest(
+        postings,
+        footer,
+        score_fn=lambda p: scores[p.key()],
+        since=datetime.fromisoformat(since).date(),
+    )
+    return digest, since
+
+
+def send_weekly(store: DiffStore, recipients: list[str], now: datetime) -> int:
+    weekly = build_weekly(store, now)
+    if weekly is None:
+        return 0
+    digest, since = weekly
+    try:
+        EmailNotifier(SmtpConfig.from_env()).notify(digest, recipients)
+    except Exception as e:  # noqa: BLE001
+        log.error("Failed to send weekly email: %s", e)
+        ConsoleNotifier().notify(digest, recipients)
+        return 1
+    store.record_weekly(since, digest.match_count, now=now.isoformat(timespec="seconds"))
+    return 0
 
 
 def run(args: argparse.Namespace) -> int:
@@ -301,10 +349,18 @@ def run(args: argparse.Namespace) -> int:
     # --- notify ---
     # Always send a digest, even on empty days, so a delivered email doubles as
     # a heartbeat confirming the monitor ran. render_digest handles n == 0.
-    digest = render_digest(new_matches, summary, score_fn=posting_filter.entry_score)
+    digest = render_digest(new_matches, summary.as_line(), score_fn=posting_filter.entry_score)
+    daily_to = recipients_from_env("EMAIL_TO_DAILY")
+    weekly_to = recipients_from_env("EMAIL_TO_WEEKLY")
+    now = datetime.now(timezone.utc)
     if args.dry_run:
         log.info("[DRY-RUN] Would email %d new match(es):", len(new_matches))
-        ConsoleNotifier().notify(digest)
+        ConsoleNotifier().notify(digest, daily_to)
+        with DiffStore(db_path) as store:
+            weekly = build_weekly(store, now)
+        if weekly is not None:
+            log.info("[DRY-RUN] Weekly digest is due:")
+            ConsoleNotifier().notify(weekly[0], weekly_to)
         if all_shadow_matches:
             log.info(
                 "[DRY-RUN] %d broader candidate(s) would be retained in shadow audit.",
@@ -326,18 +382,19 @@ def run(args: argparse.Namespace) -> int:
             store.finish_notification(run_id, new_matches, status="seeded")
             log.info("[SEED] Wrote %d matches to state; no email sent.", len(new_matches))
             return 0
+        rc = 0
         try:
-            notifier = EmailNotifier(SmtpConfig.from_env())
-            notifier.notify(digest)
+            EmailNotifier(SmtpConfig.from_env()).notify(digest, daily_to)
         except Exception as e:  # noqa: BLE001
             log.error("Failed to send email: %s", e)
             store.fail_notification(run_id, str(e))
             # The audit is retained, but seen-state is intentionally untouched
             # so the same postings remain eligible for the next successful run.
-            ConsoleNotifier().notify(digest)
-            return 1
-        store.finish_notification(run_id, new_matches, status="sent")
-    return 0
+            ConsoleNotifier().notify(digest, daily_to)
+            rc = 1
+        else:
+            store.finish_notification(run_id, new_matches, status="sent")
+        return max(rc, send_weekly(store, weekly_to, now))
 
 
 def main(argv=None) -> int:
